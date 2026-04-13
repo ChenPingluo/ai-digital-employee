@@ -1,0 +1,60 @@
+==================== AI 数字员工系统 - 运行命令 ====================
+
+【一、启动服务】
+
+  # 启动所有服务（首次或代码修改后）
+  docker-compose up -d --build
+
+  # 日常启动（代码未修改，秒级启动）
+  docker-compose up -d
+
+【二、查看状态】
+
+  # 查看所有服务状态
+  docker-compose ps
+
+  # 查看后端日志
+  docker logs ai_employee_backend --tail 30
+
+  # 实时查看后端日志
+  docker logs -f ai_employee_backend
+
+【三、停止服务】
+
+  # 停止所有服务（保留数据）
+  docker-compose down
+
+  # 停止并删除数据卷（重置数据库，慎用）
+  docker-compose down -v
+
+【四、单独重启某个服务】
+
+  # 仅重启后端
+  docker-compose up -d --build backend
+
+  # 仅重启前端
+  docker-compose up -d --build frontend
+
+【五、镜像备份与恢复（防止缓存丢失）】
+
+  # 导出镜像到本地文件
+  docker save -o docker-images-backup.tar postgres:15-alpine redis:7-alpine python:3.11-slim
+
+  # 从本地文件恢复镜像（不需要网络）
+  docker load -i docker-images-backup.tar
+
+【六、访问地址】
+
+  前端页面：http://localhost
+  后端API：http://localhost:8000
+  API文档：http://localhost:8000/docs
+
+【七、测试账户】
+
+  用户名：test     密码：123456   角色：普通用户
+  用户名：admin    密码：123456   角色：管理员
+
+====================================================================
+注意：所有命令需在项目根目录（c:\Users\Logic\Project）下执行
+注意：运行前请确保 Docker Desktop 已启动
+====================================================================

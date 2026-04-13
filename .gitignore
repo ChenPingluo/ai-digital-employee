@@ -1,0 +1,38 @@
+# Environment files
+.env
+backend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Node.js
+node_modules/
+frontend/node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker backup
+docker-images-backup.tar
+
+# Qoder internal
+.qoder/
+
+# Logs
+*.log
+
+# Lock files (optional, uncomment if needed)
+# frontend/package-lock.json

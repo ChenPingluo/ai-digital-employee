@@ -1,0 +1,191 @@
+# ==================== AI 数字员工系统 Docker Compose 配置 ====================
+#
+# 服务编排：
+# - postgres: PostgreSQL 15 数据库
+# - redis: Redis 7 缓存服务
+# - backend: FastAPI 后端服务
+# - frontend: Nginx + Vue 前端服务
+#
+# 使用方法：
+# 1. 复制 .env.example 为 .env 并填写配置
+# 2. 运行 docker-compose up -d 启动所有服务
+# 3. 访问 http://localhost 查看前端页面
+# 4. 访问 http://localhost:8000/docs 查看 API 文档
+#
+
+version: '3.8'
+
+# ==================== 服务定义 ====================
+services:
+  # ==================== PostgreSQL 数据库 ====================
+  postgres:
+    image: postgres:15-alpine
+    container_name: ai_employee_postgres
+    restart: unless-stopped
+    
+    # 环境变量配置
+    environment:
+      # 数据库用户名
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      # 数据库密码
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      # 数据库名称
+      POSTGRES_DB: ${POSTGRES_DB:-ai_employee}
+      # 设置时区
+      TZ: Asia/Shanghai
+    
+    # 数据卷挂载
+    volumes:
+      # 数据持久化
+      - postgres_data:/var/lib/postgresql/data
+      # 初始化脚本（首次启动时执行）
+      - ./backend/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    
+    # 端口映射（仅开发环境暴露）
+    ports:
+      - "5432:5432"
+    
+    # 网络配置
+    networks:
+      - ai_employee_network
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ai_employee}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==================== Redis 缓存服务 ====================
+  redis:
+    image: redis:7-alpine
+    container_name: ai_employee_redis
+    restart: unless-stopped
+    
+    # Redis 配置命令
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    
+    # 数据卷挂载
+    volumes:
+      # 数据持久化
+      - redis_data:/data
+    
+    # 端口映射（仅开发环境暴露）
+    ports:
+      - "6379:6379"
+    
+    # 网络配置
+    networks:
+      - ai_employee_network
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ==================== 后端服务 ====================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ai_employee_backend
+    restart: unless-stopped
+    
+    # 环境变量配置
+    environment:
+      # 数据库连接（使用 Docker 内部网络地址）
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-ai_employee}
+      # Redis 连接
+      REDIS_URL: redis://redis:6379/0
+      # JWT 配置
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}
+      # LLM 配置
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-your-openai-api-key}
+      OPENAI_API_BASE: ${OPENAI_API_BASE:-http://host.docker.internal:11434/v1}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-qwen2}
+      # FastGPT 配置
+      FASTGPT_API_URL: ${FASTGPT_API_URL:-http://host.docker.internal:3000/api/v1/chat/completions}
+      FASTGPT_API_KEY: ${FASTGPT_API_KEY:-your-fastgpt-api-key}
+      # 天气 API 配置
+      WEATHER_API_KEY: ${WEATHER_API_KEY:-your-weather-api-key}
+      WEATHER_API_URL: ${WEATHER_API_URL:-https://api.seniverse.com/v3/weather/now.json}
+      # 限流配置
+      RATE_LIMIT_PER_USER: ${RATE_LIMIT_PER_USER:-10}
+      RATE_LIMIT_GLOBAL: ${RATE_LIMIT_GLOBAL:-500}
+    
+    # 端口映射
+    ports:
+      - "8000:8000"
+    
+    # 服务依赖
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
+    # 网络配置
+    networks:
+      - ai_employee_network
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ==================== 前端服务 ====================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ai_employee_frontend
+    restart: unless-stopped
+    
+    # 端口映射
+    ports:
+      - "80:80"
+    
+    # 服务依赖
+    depends_on:
+      - backend
+    
+    # 网络配置
+    networks:
+      - ai_employee_network
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+# ==================== 网络配置 ====================
+networks:
+  # 自定义 bridge 网络
+  ai_employee_network:
+    driver: bridge
+    name: ai_employee_network
+
+# ==================== 数据卷配置 ====================
+volumes:
+  # PostgreSQL 数据持久化卷
+  postgres_data:
+    name: ai_employee_postgres_data
+  # Redis 数据持久化卷
+  redis_data:
+    name: ai_employee_redis_data
