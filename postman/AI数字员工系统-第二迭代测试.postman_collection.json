@@ -1,0 +1,715 @@
+{
+  "info": {
+    "name": "AI数字员工系统-第二迭代测试",
+    "_postman_id": "ai-employee-iter2",
+    "description": "AI数字员工系统第二迭代全量接口测试集合\n\n覆盖7个模块：基础检查、认证、待办、会议室、AI对话、统计、会话管理\n\n运行前请确保后端服务已启动：http://localhost:8000",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "todo_id", "value": "", "type": "string" },
+    { "key": "room_id", "value": "", "type": "string" },
+    { "key": "reservation_id", "value": "", "type": "string" },
+    { "key": "conversation_id", "value": "", "type": "string" },
+    { "key": "tomorrow_10", "value": "", "type": "string" },
+    { "key": "tomorrow_11", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "0-基础检查",
+      "item": [
+        {
+          "name": "健康检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/health", "host": ["{{base_url}}"], "path": ["health"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('健康检查返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('状态为healthy', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('healthy');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1-认证模块",
+      "item": [
+        {
+          "name": "用户登录（提取Token）",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"test\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/auth/login", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "login"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('登录成功返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回access_token', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.access_token).to.be.a('string');",
+                  "    pm.collectionVariables.set('token', json.access_token);",
+                  "});",
+                  "pm.test('返回用户信息', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.user.username).to.eql('test');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "获取当前用户信息",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/auth/me", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "me"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('获取用户信息成功', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('用户名为test', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.username).to.eql('test');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2-待办模块",
+      "item": [
+        {
+          "name": "创建待办事项",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"第二迭代测试待办\",\n  \"description\": \"Postman自动化测试创建\",\n  \"priority\": 2\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/todos/", "host": ["{{base_url}}"], "path": ["api", "v1", "todos", ""] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('创建待办返回201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('返回待办ID并存入变量', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.be.a('string');",
+                  "    pm.collectionVariables.set('todo_id', json.id);",
+                  "});",
+                  "pm.test('标题正确', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.title).to.eql('第二迭代测试待办');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "获取待办列表",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/todos/?page=1&page_size=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "todos", ""],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "page_size", "value": "10" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('获取列表返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回items数组和total', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.items).to.be.an('array');",
+                  "    pm.expect(json.total).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "更新待办状态为completed",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/todos/{{todo_id}}/status?status=completed",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "todos", "{{todo_id}}", "status"],
+              "query": [{ "key": "status", "value": "completed" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('更新状态返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('状态已变更为completed', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('completed');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3-会议室模块",
+      "item": [
+        {
+          "name": "获取会议室列表（提取room_id）",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/meetings/rooms", "host": ["{{base_url}}"], "path": ["api", "v1", "meetings", "rooms"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('获取会议室列表返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回items数组并存入room_id', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.items).to.be.an('array');",
+                  "    pm.expect(json.items.length).to.be.above(0);",
+                  "    pm.collectionVariables.set('room_id', json.items[0].id);",
+                  "});",
+                  "pm.test('会议室包含name和capacity', function () {",
+                  "    var json = pm.response.json();",
+                  "    var room = json.items[0];",
+                  "    pm.expect(room.name).to.be.a('string');",
+                  "    pm.expect(room.capacity).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "按容量筛选会议室",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/meetings/rooms?min_capacity=8",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "meetings", "rooms"],
+              "query": [{ "key": "min_capacity", "value": "8" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('筛选请求返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回的会议室容量均>=8', function () {",
+                  "    var json = pm.response.json();",
+                  "    json.items.forEach(function(room) {",
+                  "        pm.expect(room.capacity).to.be.at.least(8);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "创建会议室预约（提取reservation_id）",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"room_id\": \"{{room_id}}\",\n  \"title\": \"第二迭代测试会议\",\n  \"start_time\": \"{{tomorrow_10}}\",\n  \"end_time\": \"{{tomorrow_11}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/meetings/reservations", "host": ["{{base_url}}"], "path": ["api", "v1", "meetings", "reservations"] }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// 自动计算明天10:00和11:00的ISO时间",
+                  "var now = new Date();",
+                  "var tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);",
+                  "var start = new Date(tomorrow);",
+                  "start.setHours(10, 0, 0, 0);",
+                  "var end = new Date(tomorrow);",
+                  "end.setHours(11, 0, 0, 0);",
+                  "pm.collectionVariables.set('tomorrow_10', start.toISOString());",
+                  "pm.collectionVariables.set('tomorrow_11', end.toISOString());"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('创建预约返回201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('返回预约ID并存入变量', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.be.a('string');",
+                  "    pm.collectionVariables.set('reservation_id', json.id);",
+                  "});",
+                  "pm.test('预约状态为confirmed', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('confirmed');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "获取我的预约列表",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/meetings/reservations", "host": ["{{base_url}}"], "path": ["api", "v1", "meetings", "reservations"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('获取预约列表返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回items数组', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.items).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "获取预约详情",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/meetings/reservations/{{reservation_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "meetings", "reservations", "{{reservation_id}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('获取预约详情返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('预约ID匹配', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get('reservation_id'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "取消预约",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/meetings/reservations/{{reservation_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "meetings", "reservations", "{{reservation_id}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('取消预约返回204或200', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4-AI对话模块",
+      "item": [
+        {
+          "name": "发送对话消息（提取conversation_id）",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"你好，请介绍一下你的功能\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/chat/", "host": ["{{base_url}}"], "path": ["api", "v1", "chat", ""] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('对话返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回message字符串', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.be.a('string');",
+                  "});",
+                  "pm.test('返回conversation_id并存入变量', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.conversation_id).to.be.a('string');",
+                  "    pm.collectionVariables.set('conversation_id', json.conversation_id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "同一会话多轮对话",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"我有哪些待办事项\",\n  \"conversation_id\": \"{{conversation_id}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/chat/", "host": ["{{base_url}}"], "path": ["api", "v1", "chat", ""] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('多轮对话返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('conversation_id保持一致', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.conversation_id).to.eql(pm.collectionVariables.get('conversation_id'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5-统计模块",
+      "item": [
+        {
+          "name": "待办事项统计",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/statistics/todo-stats", "host": ["{{base_url}}"], "path": ["api", "v1", "statistics", "todo-stats"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('待办统计返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('status为success', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('success');",
+                  "});",
+                  "pm.test('包含total字段且为数字', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.data.total).to.be.a('number');",
+                  "});",
+                  "pm.test('包含各状态字段', function () {",
+                  "    var data = pm.response.json().data;",
+                  "    pm.expect(data).to.have.property('pending');",
+                  "    pm.expect(data).to.have.property('in_progress');",
+                  "    pm.expect(data).to.have.property('completed');",
+                  "    pm.expect(data).to.have.property('cancelled');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "会议室使用统计",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/statistics/meeting-stats", "host": ["{{base_url}}"], "path": ["api", "v1", "statistics", "meeting-stats"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('会议统计返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('status为success', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('success');",
+                  "});",
+                  "pm.test('data包含rooms数组', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.data.rooms).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "数据概览",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/statistics/overview", "host": ["{{base_url}}"], "path": ["api", "v1", "statistics", "overview"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('数据概览返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('包含todo_stats和meeting_stats', function () {",
+                  "    var data = pm.response.json().data;",
+                  "    pm.expect(data).to.have.property('todo_stats');",
+                  "    pm.expect(data).to.have.property('meeting_stats');",
+                  "});",
+                  "pm.test('包含用户信息', function () {",
+                  "    var data = pm.response.json().data;",
+                  "    pm.expect(data.user.username).to.eql('test');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6-会话管理",
+      "item": [
+        {
+          "name": "创建新会话",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman测试会话\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/chat/conversations", "host": ["{{base_url}}"], "path": ["api", "v1", "chat", "conversations"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('创建会话返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回会话ID', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.be.a('string');",
+                  "    // 用新变量存储，不覆盖对话模块产生的conversation_id",
+                  "    pm.collectionVariables.set('test_conv_id', json.id);",
+                  "});",
+                  "pm.test('标题正确', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.title).to.eql('Postman测试会话');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "获取会话列表",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/chat/conversations", "host": ["{{base_url}}"], "path": ["api", "v1", "chat", "conversations"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('获取会话列表返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回数组且不为空', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "    pm.expect(json.length).to.be.above(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "获取会话消息历史",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/chat/conversations/{{conversation_id}}/messages", "host": ["{{base_url}}"], "path": ["api", "v1", "chat", "conversations", "{{conversation_id}}", "messages"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('获取消息历史返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('返回消息数组', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});",
+                  "pm.test('消息包含role和content', function () {",
+                  "    var json = pm.response.json();",
+                  "    if (json.length > 0) {",
+                  "        pm.expect(json[0]).to.have.property('role');",
+                  "        pm.expect(json[0]).to.have.property('content');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "删除测试会话",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/v1/chat/conversations/{{test_conv_id}}", "host": ["{{base_url}}"], "path": ["api", "v1", "chat", "conversations", "{{test_conv_id}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('删除会话返回200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('删除成功', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

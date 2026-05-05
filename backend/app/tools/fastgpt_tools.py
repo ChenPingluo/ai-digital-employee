@@ -10,7 +10,7 @@ from typing import List
 
 from langchain.tools import StructuredTool
 from langchain_core.tools import BaseTool
-from pydantic import BaseModel, Field
+from langchain_core.pydantic_v1 import BaseModel, Field
 
 from app.services import fastgpt_service
 

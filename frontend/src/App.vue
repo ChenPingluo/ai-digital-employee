@@ -70,21 +70,21 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* 背景色 */
-  background-color: #f5f7fa;
+  background-color: var(--bg-base);
   /* 文字颜色 */
-  color: #303133;
+  color: var(--text-primary);
   /* 行高 */
   line-height: 1.5;
 }
 
 /* 链接样式 */
 a {
-  color: #409eff;
+  color: var(--primary-color);
   text-decoration: none;
 }
 
 a:hover {
-  color: #66b1ff;
+  color: var(--primary-light);
 }
 
 /* ==================== 应用容器样式 ==================== */
@@ -94,6 +94,8 @@ a:hover {
   min-height: 100vh;
   /* 宽度占满 */
   width: 100%;
+  /* 深色底色 */
+  background-color: var(--bg-base);
 }
 
 /* ==================== 路由过渡动画 ==================== */
@@ -119,19 +121,19 @@ a:hover {
 
 /* 滚动条轨道 */
 ::-webkit-scrollbar-track {
-  background-color: #f1f1f1;
+  background-color: var(--bg-light);
   border-radius: 4px;
 }
 
 /* 滚动条滑块 */
 ::-webkit-scrollbar-thumb {
-  background-color: #c0c4cc;
+  background-color: var(--border-base);
   border-radius: 4px;
 }
 
 /* 滚动条滑块悬停状态 */
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #909399;
+  background-color: var(--text-secondary);
 }
 
 /* ==================== Element Plus 样式覆盖 ==================== */

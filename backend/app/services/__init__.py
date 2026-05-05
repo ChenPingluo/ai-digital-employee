@@ -9,10 +9,12 @@ from app.services import todo_service
 from app.services import meeting_service
 from app.services import weather_service
 from app.services import fastgpt_service
+from app.services.conversation_service import ConversationService
 
 __all__ = [
     "todo_service",
     "meeting_service",
     "weather_service",
-    "fastgpt_service"
+    "fastgpt_service",
+    "ConversationService"
 ]

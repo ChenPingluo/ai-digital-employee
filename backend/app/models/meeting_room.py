@@ -113,7 +113,7 @@ class MeetingRoom(Base):
         "Reservation",
         back_populates="room",
         cascade="all, delete-orphan",
-        lazy="selectin"
+        lazy="noload"
     )
     
     def __repr__(self) -> str:

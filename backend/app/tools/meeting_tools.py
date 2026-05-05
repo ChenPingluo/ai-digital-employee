@@ -10,12 +10,12 @@
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 
 from langchain.tools import StructuredTool
 from langchain_core.tools import BaseTool
-from pydantic import BaseModel, Field
+from langchain_core.pydantic_v1 import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services import meeting_service
@@ -135,7 +135,7 @@ def get_meeting_tools(user_id: str, db_session: AsyncSession) -> List[BaseTool]:
             if parsed_end <= parsed_start:
                 return "❌ 结束时间必须晚于开始时间"
             
-            if parsed_start < datetime.now(parsed_start.tzinfo):
+            if parsed_start < datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None):
                 return "❌ 开始时间不能早于当前时间"
             
             # 构建预约数据

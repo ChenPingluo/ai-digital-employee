@@ -219,7 +219,21 @@ async def create_reservation(
         
         db.add(reservation)
         await db.flush()
-        await db.refresh(reservation)
+
+        # flush 后重新查询以加载关联对象
+        # noload 策略下 db.refresh 无法加载 relationship
+        # 先 expunge 从 session 移除，避免 identity map 返回未加载的缓存实例
+        reservation_id = reservation.id
+        db.expunge(reservation)
+        result = await db.execute(
+            select(Reservation)
+            .options(
+                selectinload(Reservation.room),
+                selectinload(Reservation.user)
+            )
+            .where(Reservation.id == reservation_id)
+        )
+        reservation = result.scalar_one()
         
         # ===== 创建预约后清除会议室缓存 =====
         try:
@@ -271,11 +285,14 @@ async def get_user_reservations(
         total_result = await db.execute(count_query)
         total = total_result.scalar() or 0
         
-        # 分页查询（加载会议室信息）
+        # 分页查询（加载会议室和用户信息）
         offset = (page - 1) * page_size
         query = (
             select(Reservation)
-            .options(selectinload(Reservation.room))
+            .options(
+                selectinload(Reservation.room),
+                selectinload(Reservation.user)
+            )
             .where(and_(*conditions))
             .order_by(Reservation.start_time.desc())
             .offset(offset)
@@ -310,7 +327,10 @@ async def get_reservation_by_id(
     try:
         query = (
             select(Reservation)
-            .options(selectinload(Reservation.room))
+            .options(
+                selectinload(Reservation.room),
+                selectinload(Reservation.user)
+            )
             .where(
                 and_(
                     Reservation.id == reservation_id,

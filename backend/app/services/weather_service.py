@@ -2,7 +2,7 @@
 """
 天气服务模块
 
-使用心知天气 API 获取天气信息。
+使用 uapis.cn 免费天气 API 获取天气信息（无需密钥）。
 支持异步请求、异常处理和默认响应。
 集成 Redis 缓存，TTL 30分钟，减少 API 调用次数。
 """
@@ -10,33 +10,28 @@
 import httpx
 from typing import Optional
 
-from app.config import settings
 from app.services.cache_service import (
     get_weather_cache,
     set_weather_cache,
     WEATHER_CACHE_TTL
 )
 
+# uapis.cn 免费天气 API 地址（无需密钥）
+WEATHER_API_URL = "https://uapis.cn/api/v1/misc/weather"
+
 
 async def get_weather(city: str) -> dict:
     """
     获取指定城市的天气信息
     
-    使用心知天气 API 查询实时天气数据。
+    使用 uapis.cn 免费 API 查询实时天气数据。
     集成 Redis 缓存，缓存 TTL 为 30 分钟。
     
     Args:
-        city: 城市名称（中文或拼音，如"北京"或"beijing"）
+        city: 城市名称（中文或英文，如"北京"或"Tokyo"）
         
     Returns:
-        dict: 天气信息字典，包含以下字段：
-            - city: 城市名称
-            - weather: 天气状况（如"晴"、"多云"）
-            - temperature: 当前温度（摄氏度）
-            - humidity: 相对湿度（可选）
-            - wind: 风力信息（可选）
-            - update_time: 数据更新时间
-            - from_cache: 是否来自缓存（布尔值）
+        dict: 天气信息字典
             
     Example:
         >>> weather = await get_weather("北京")
@@ -47,59 +42,49 @@ async def get_weather(city: str) -> dict:
     try:
         cached_data = await get_weather_cache(city)
         if cached_data is not None:
-            # 缓存命中，添加标记后直接返回
             cached_data["from_cache"] = True
             return cached_data
     except Exception as e:
-        # 缓存操作异常时降级为直接查询 API
         print(f"⚠️ 天气缓存查询失败，降级为 API 查询: {e}")
     
     # ===== 第二步：缓存未命中，调用天气 API =====
     try:
-        # 构建请求参数
         params = {
-            "key": settings.WEATHER_API_KEY,
-            "location": city,
-            "language": "zh-Hans",
-            "unit": "c"  # 使用摄氏度
+            "city": city,
+            "lang": "zh"
         }
         
-        # 使用 httpx 异步客户端发送请求
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(
-                settings.WEATHER_API_URL,
+                WEATHER_API_URL,
                 params=params
             )
             
-            # 检查 HTTP 响应状态
             if response.status_code != 200:
                 return _get_error_response(
                     city,
                     f"天气服务暂时不可用（状态码：{response.status_code}）"
                 )
             
-            # 解析响应数据
             data = response.json()
             
-            # 检查 API 返回状态
-            if "results" not in data or len(data["results"]) == 0:
+            # 检查返回数据是否有效
+            if not data.get("city") and not data.get("weather"):
                 return _get_error_response(
                     city,
                     "未找到该城市的天气信息"
                 )
             
-            # 提取天气数据
-            result = data["results"][0]
-            location = result.get("location", {})
-            now = result.get("now", {})
-            
-            # 构建返回数据
+            # 构建返回数据（适配 uapis.cn 响应格式）
             weather_data = {
-                "city": location.get("name", city),
-                "weather": now.get("text", "未知"),
-                "temperature": now.get("temperature", "N/A"),
-                "code": now.get("code", ""),
-                "update_time": result.get("last_update", ""),
+                "city": data.get("city", city),
+                "province": data.get("province", ""),
+                "weather": data.get("weather", "未知"),
+                "temperature": str(data.get("temperature", "N/A")),
+                "humidity": data.get("humidity"),
+                "wind_direction": data.get("wind_direction", ""),
+                "wind_power": data.get("wind_power", ""),
+                "update_time": data.get("report_time", ""),
                 "success": True,
                 "from_cache": False
             }
@@ -108,21 +93,17 @@ async def get_weather(city: str) -> dict:
             try:
                 await set_weather_cache(city, weather_data)
             except Exception as e:
-                # 缓存写入失败不影响返回结果
                 print(f"⚠️ 天气数据缓存写入失败: {e}")
             
             return weather_data
             
     except httpx.TimeoutException:
-        # 请求超时
         return _get_error_response(city, "天气查询超时，请稍后重试")
         
     except httpx.RequestError as e:
-        # 网络请求错误
         return _get_error_response(city, f"网络请求失败: {str(e)}")
         
     except Exception as e:
-        # 其他异常
         return _get_error_response(city, f"获取天气信息失败: {str(e)}")
 
 

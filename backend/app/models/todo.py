@@ -126,7 +126,8 @@ class Todo(Base):
     # 与用户的多对一关系
     user: Mapped["User"] = relationship(
         "User",
-        back_populates="todos"
+        back_populates="todos",
+        lazy="noload"
     )
     
     def __repr__(self) -> str:

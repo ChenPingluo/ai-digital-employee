@@ -214,10 +214,16 @@ defineExpose({
 .chat-input {
   display: flex;
   flex-direction: column;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: var(--bg-light);
+  border: 1px solid var(--border-base);
+  border-radius: var(--radius-large);
   padding: 16px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chat-input:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: var(--glow-primary);
 }
 
 /* ==================== 输入区域 ==================== */
@@ -232,30 +238,32 @@ defineExpose({
   min-height: 60px;
   max-height: 200px;
   padding: 12px 16px;
-  border: 1px solid #dcdfe6;
-  border-radius: 8px;
+  border: none;
+  border-radius: var(--radius-base);
   font-size: 14px;
   line-height: 1.6;
-  color: #303133;
+  color: var(--text-primary);
+  background: transparent;
   resize: none;
   outline: none;
   font-family: inherit;
   transition: border-color 0.2s ease;
+  box-sizing: border-box;
 }
 
 .input-textarea:focus {
-  border-color: #409EFF;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .input-textarea:disabled {
-  background-color: #f5f7fa;
+  background-color: rgba(255, 255, 255, 0.03);
   cursor: not-allowed;
-  color: #c0c4cc;
+  color: var(--text-placeholder);
 }
 
 .input-textarea::placeholder {
-  color: #c0c4cc;
+  color: var(--text-placeholder);
 }
 
 /* ==================== 操作栏 ==================== */
@@ -269,7 +277,37 @@ defineExpose({
 /* 提示文字 */
 .input-hint {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-secondary);
+}
+
+/* ==================== 发送按钮 ==================== */
+
+.input-actions :deep(.el-button--primary) {
+  background: transparent;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  border-radius: var(--radius-round);
+  transition: all 0.3s ease;
+}
+
+.input-actions :deep(.el-button--primary:hover) {
+  background: rgba(0, 212, 255, 0.15);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.input-actions :deep(.el-button--primary:active) {
+  background: rgba(0, 212, 255, 0.25);
+}
+
+.input-actions :deep(.el-button.is-disabled) {
+  background: transparent;
+  border-color: var(--border-base);
+  color: var(--text-placeholder);
+}
+
+.input-actions :deep(.el-button--primary .el-icon) {
+  color: inherit;
 }
 
 /* ==================== 响应式适配 ==================== */

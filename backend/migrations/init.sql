@@ -299,6 +299,79 @@ CREATE TRIGGER trigger_reservations_updated_at
 
 
 -- ============================================================================
+-- 会话表 (conversations)
+-- 
+-- 存储用户的聊天会话，支持多轮对话管理。
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS conversations (
+    -- 主键：使用 UUID 作为主键
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- 外键：关联用户表，级联删除
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- 会话标题
+    title VARCHAR(200),
+    
+    -- 创建时间
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    -- 更新时间
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 会话表索引
+CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id);
+
+-- 添加表和字段注释
+COMMENT ON TABLE conversations IS '聊天会话表，存储用户的对话会话';
+COMMENT ON COLUMN conversations.id IS '会话唯一标识符';
+COMMENT ON COLUMN conversations.user_id IS '会话所属用户ID';
+COMMENT ON COLUMN conversations.title IS '会话标题';
+
+
+-- ============================================================================
+-- 聊天消息表 (chat_messages)
+-- 
+-- 存储会话中的聊天消息记录。
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS chat_messages (
+    -- 主键：使用 UUID 作为主键
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- 外键：关联会话表，级联删除
+    conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    
+    -- 消息角色：user/assistant/system
+    role VARCHAR(20) NOT NULL,
+    
+    -- 消息内容
+    content TEXT NOT NULL,
+    
+    -- 创建时间
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 聊天消息表索引
+CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation_id ON chat_messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at);
+
+-- 添加表和字段注释
+COMMENT ON TABLE chat_messages IS '聊天消息表，存储会话中的消息记录';
+COMMENT ON COLUMN chat_messages.id IS '消息唯一标识符';
+COMMENT ON COLUMN chat_messages.conversation_id IS '消息所属会话ID';
+COMMENT ON COLUMN chat_messages.role IS '消息角色：user/assistant/system';
+COMMENT ON COLUMN chat_messages.content IS '消息内容';
+
+-- 为 conversations 表添加更新时间触发器
+DROP TRIGGER IF EXISTS trigger_conversations_updated_at ON conversations;
+CREATE TRIGGER trigger_conversations_updated_at
+    BEFORE UPDATE ON conversations
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+
+-- ============================================================================
 -- 插入测试数据
 -- ============================================================================
 
@@ -339,6 +412,8 @@ ON CONFLICT (name) DO NOTHING;
 -- 2. todos - 待办事项表
 -- 3. meeting_rooms - 会议室表
 -- 4. reservations - 预约表
+-- 5. conversations - 会话表
+-- 6. chat_messages - 聊天消息表
 -- 
 -- 测试账户：
 -- - 普通用户：test / 123456

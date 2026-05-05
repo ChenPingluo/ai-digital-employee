@@ -125,19 +125,21 @@ class User(Base):
     # 与待办事项的一对多关系
     # back_populates 建立双向关系
     # cascade 设置级联删除
+    # lazy="noload" 防止异步上下文中自动加载关联对象触发 MissingGreenlet
     todos: Mapped[List["Todo"]] = relationship(
         "Todo",
         back_populates="user",
         cascade="all, delete-orphan",
-        lazy="selectin"
+        lazy="noload"
     )
     
     # 与会议室预约的一对多关系
+    # lazy="noload" 防止异步上下文中自动加载关联对象触发 MissingGreenlet
     reservations: Mapped[List["Reservation"]] = relationship(
         "Reservation",
         back_populates="user",
         cascade="all, delete-orphan",
-        lazy="selectin"
+        lazy="noload"
     )
     
     def __repr__(self) -> str:

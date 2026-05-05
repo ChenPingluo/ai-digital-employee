@@ -55,6 +55,49 @@
           <span v-show="!isSidebarCollapsed">数据看板</span>
         </router-link>
       </nav>
+
+      <!-- 新建话题按钮 -->
+      <div class="new-topic-section">
+        <el-button
+          class="new-topic-btn"
+          type="primary"
+          :icon="Plus"
+          @click="chatStore.createNewConversation()"
+        >
+          <span v-show="!isSidebarCollapsed">新建话题</span>
+        </el-button>
+      </div>
+
+      <!-- 对话历史列表 -->
+      <div class="conversation-list" v-show="!isSidebarCollapsed">
+        <div class="conversation-list-header">
+          <span>历史对话</span>
+        </div>
+        <div class="conversation-list-body">
+          <div
+            v-for="conv in chatStore.conversations"
+            :key="conv.id"
+            class="conversation-item"
+            :class="{ active: chatStore.currentConversationId === conv.id }"
+            @click="chatStore.switchConversation(conv.id)"
+          >
+            <div class="conversation-info">
+              <span class="conversation-title">{{ conv.title || '新对话' }}</span>
+              <span class="conversation-time">{{ formatRelativeTime(conv.updated_at || conv.created_at) }}</span>
+            </div>
+            <el-button
+              class="conversation-delete-btn"
+              :icon="Delete"
+              text
+              size="small"
+              @click.stop="handleDeleteConversation(conv.id)"
+            />
+          </div>
+          <div v-if="chatStore.conversations.length === 0" class="conversation-empty">
+            暂无历史对话
+          </div>
+        </div>
+      </div>
       
       <!-- 侧边栏底部 -->
       <div class="sidebar-footer">
@@ -210,7 +253,9 @@ import {
   List,
   Calendar,
   Cloudy,
-  Setting
+  Setting,
+  Plus,
+  Delete
 } from '@element-plus/icons-vue'
 
 // 导入组件
@@ -374,11 +419,59 @@ const handleLogout = async () => {
   }
 }
 
+/**
+ * 删除会话（带确认）
+ * @param {string} conversationId - 会话 ID
+ */
+const handleDeleteConversation = async (conversationId) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要删除这个对话吗？删除后无法恢复。',
+      '删除对话',
+      {
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
+      }
+    )
+    await chatStore.deleteConversation(conversationId)
+  } catch {
+    // 用户取消
+  }
+}
+
+/**
+ * 格式化相对时间
+ * @param {string} timestamp - ISO 时间字符串
+ * @returns {string} 相对时间文本
+ */
+const formatRelativeTime = (timestamp) => {
+  if (!timestamp) return ''
+  const now = new Date()
+  const date = new Date(timestamp)
+  const diff = now - date
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes}分钟前`
+  if (hours < 24) return `${hours}小时前`
+  if (days < 7) return `${days}天前`
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const day = date.getDate().toString().padStart(2, '0')
+  return `${month}-${day}`
+}
+
 // ==================== 生命周期 ====================
 
 onMounted(() => {
   // 初始化用户信息
   userStore.initializeAuth()
+  
+  // 加载会话列表
+  chatStore.loadConversations()
   
   // 聚焦到输入框
   nextTick(() => {
@@ -412,7 +505,7 @@ watch(isMobileMenuOpen, (isOpen) => {
 .chat-view {
   display: flex;
   height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--bg-base);
   overflow: hidden;
 }
 
@@ -420,11 +513,11 @@ watch(isMobileMenuOpen, (isOpen) => {
 
 .sidebar {
   width: 240px;
-  background: white;
+  background: var(--bg-light);
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
-  transition: width 0.3s ease;
+  border-right: 1px solid var(--border-base);
+  transition: width var(--transition-base);
   z-index: 100;
 }
 
@@ -438,7 +531,7 @@ watch(isMobileMenuOpen, (isOpen) => {
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--border-base);
 }
 
 .logo {
@@ -447,20 +540,34 @@ watch(isMobileMenuOpen, (isOpen) => {
   gap: 10px;
 }
 
+.logo :deep(.el-icon) {
+  color: var(--primary-color) !important;
+}
+
 .logo-text {
   font-size: 18px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-primary);
 }
 
 .collapse-btn {
   padding: 8px;
+  color: var(--text-secondary) !important;
+  background: var(--bg-white) !important;
+  border: 1px solid var(--border-base) !important;
+  border-radius: var(--radius-base) !important;
+  transition: all var(--transition-fast);
+}
+
+.collapse-btn:hover {
+  color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  background: rgba(0, 212, 255, 0.08) !important;
 }
 
 /* 导航菜单 */
 .sidebar-nav {
-  flex: 1;
-  padding: 16px 8px;
+  padding: 16px 8px 8px;
 }
 
 .nav-item {
@@ -468,21 +575,21 @@ watch(isMobileMenuOpen, (isOpen) => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-radius: 8px;
-  color: #606266;
+  border-radius: var(--radius-base);
+  color: var(--text-secondary);
   margin-bottom: 4px;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
   text-decoration: none;
 }
 
 .nav-item:hover {
-  background-color: #f5f7fa;
-  color: #409EFF;
+  background-color: rgba(0, 212, 255, 0.08);
+  color: var(--primary-color);
 }
 
 .nav-item.active {
-  background-color: #ecf5ff;
-  color: #409EFF;
+  background-color: rgba(0, 212, 255, 0.12);
+  color: var(--primary-color);
   font-weight: 500;
 }
 
@@ -491,10 +598,147 @@ watch(isMobileMenuOpen, (isOpen) => {
   padding: 12px;
 }
 
+/* ==================== 新建话题按钮 ==================== */
+
+.new-topic-section {
+  padding: 4px 8px 8px;
+}
+
+.new-topic-btn {
+  width: 100%;
+  border-radius: var(--radius-base);
+  background: transparent !important;
+  border: 1px dashed var(--border-base) !important;
+  color: var(--text-secondary) !important;
+  transition: all var(--transition-fast);
+}
+
+.new-topic-btn:hover {
+  border-color: var(--primary-color) !important;
+  background: rgba(0, 212, 255, 0.05) !important;
+  color: var(--primary-color) !important;
+}
+
+.sidebar-collapsed .new-topic-btn {
+  padding: 8px;
+}
+
+.sidebar-collapsed .new-topic-btn :deep(.el-icon) {
+  margin-right: 0;
+}
+
+/* ==================== 对话历史列表 ==================== */
+
+.conversation-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--border-base);
+  padding: 0 8px;
+}
+
+.conversation-list-header {
+  padding: 10px 8px 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.conversation-list-body {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+/* 滚动条深色样式 */
+.conversation-list-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.conversation-list-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.conversation-list-body::-webkit-scrollbar-thumb {
+  background: var(--border-base);
+  border-radius: 2px;
+}
+
+.conversation-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px;
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-bottom: 2px;
+  background: transparent;
+}
+
+.conversation-item:hover {
+  background-color: rgba(0, 212, 255, 0.05);
+}
+
+.conversation-item.active {
+  background-color: rgba(0, 212, 255, 0.08);
+  border-left: 3px solid var(--primary-color);
+  padding-left: 7px;
+}
+
+.conversation-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.conversation-title {
+  font-size: 13px;
+  color: var(--text-regular);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-item.active .conversation-title {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.conversation-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.conversation-delete-btn {
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  color: var(--danger-color) !important;
+  padding: 4px;
+  margin-left: 4px;
+}
+
+.conversation-item:hover .conversation-delete-btn {
+  opacity: 1;
+}
+
+.conversation-empty {
+  text-align: center;
+  padding: 20px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
 /* 侧边栏底部 */
 .sidebar-footer {
   padding: 16px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--border-base);
+  background: var(--bg-light);
 }
 
 .user-info {
@@ -505,7 +749,7 @@ watch(isMobileMenuOpen, (isOpen) => {
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #409EFF 0%, #53a8ff 100%);
+  background: var(--gradient-tech) !important;
   color: white;
 }
 
@@ -517,18 +761,23 @@ watch(isMobileMenuOpen, (isOpen) => {
 .user-name {
   font-size: 14px;
   font-weight: 500;
-  color: #303133;
+  color: var(--text-primary);
 }
 
 .user-role {
   font-size: 12px;
-  color: #67C23A;
+  color: var(--success-color);
 }
 
 .logout-btn {
   width: 100%;
   justify-content: flex-start;
-  color: #909399;
+  color: var(--text-secondary) !important;
+  transition: color var(--transition-fast);
+}
+
+.logout-btn:hover {
+  color: var(--danger-color) !important;
 }
 
 .sidebar-collapsed .logout-btn {
@@ -542,6 +791,7 @@ watch(isMobileMenuOpen, (isOpen) => {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  background: var(--bg-base);
 }
 
 /* 移动端头部 */
@@ -550,15 +800,19 @@ watch(isMobileMenuOpen, (isOpen) => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background: var(--bg-light);
+  border-bottom: 1px solid var(--border-base);
 }
 
 .mobile-header h1 {
   font-size: 18px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-primary);
   margin: 0;
+}
+
+.mobile-header :deep(.el-button) {
+  color: var(--text-secondary) !important;
 }
 
 /* ==================== 消息区域 ==================== */
@@ -567,6 +821,24 @@ watch(isMobileMenuOpen, (isOpen) => {
   flex: 1;
   overflow-y: auto;
   padding: 24px;
+}
+
+/* 消息区域滚动条 */
+.message-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.message-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.message-area::-webkit-scrollbar-thumb {
+  background: var(--border-base);
+  border-radius: 3px;
+}
+
+.message-area::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
 }
 
 /* 欢迎区域 */
@@ -581,16 +853,20 @@ watch(isMobileMenuOpen, (isOpen) => {
   margin-bottom: 20px;
 }
 
+.welcome-icon :deep(.el-icon) {
+  color: var(--primary-color) !important;
+}
+
 .welcome-section h2 {
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-primary);
   margin: 0 0 12px 0;
 }
 
 .welcome-desc {
   font-size: 16px;
-  color: #909399;
+  color: var(--text-secondary);
   margin: 0 0 32px 0;
 }
 
@@ -607,29 +883,34 @@ watch(isMobileMenuOpen, (isOpen) => {
   align-items: flex-start;
   gap: 12px;
   padding: 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  background: var(--bg-light);
+  border: 1px solid var(--border-base);
+  border-radius: var(--radius-large);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-base);
   text-align: left;
 }
 
 .feature-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 212, 255, 0.3);
+  box-shadow: var(--glow-primary);
+}
+
+.feature-card :deep(.el-icon) {
+  color: var(--primary-color) !important;
 }
 
 .feature-content h3 {
   font-size: 15px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-primary);
   margin: 0 0 4px 0;
 }
 
 .feature-content p {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -640,7 +921,7 @@ watch(isMobileMenuOpen, (isOpen) => {
 
 .quick-examples > p {
   font-size: 14px;
-  color: #909399;
+  color: var(--text-secondary);
   margin-bottom: 12px;
 }
 
@@ -653,13 +934,16 @@ watch(isMobileMenuOpen, (isOpen) => {
 
 .example-tag {
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
+  background-color: var(--bg-white) !important;
+  color: var(--primary-color) !important;
+  border-color: var(--border-base) !important;
 }
 
 .example-tag:hover {
-  background-color: #ecf5ff;
-  color: #409EFF;
-  border-color: #409EFF;
+  background-color: rgba(0, 212, 255, 0.1) !important;
+  color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
 }
 
 /* 消息列表 */
@@ -677,7 +961,7 @@ watch(isMobileMenuOpen, (isOpen) => {
 }
 
 .thinking-avatar .avatar-ai {
-  background: linear-gradient(135deg, #409EFF 0%, #53a8ff 100%);
+  background: var(--gradient-tech) !important;
   color: white;
 }
 
@@ -686,14 +970,15 @@ watch(isMobileMenuOpen, (isOpen) => {
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background-color: #f4f4f5;
-  border-radius: 12px;
-  border-top-left-radius: 4px;
+  background-color: var(--bg-light);
+  border: 1px solid var(--border-base);
+  border-radius: var(--radius-large);
+  border-top-left-radius: var(--radius-small);
 }
 
 .thinking-text {
   font-size: 14px;
-  color: #909399;
+  color: var(--text-secondary);
 }
 
 .thinking-dots {
@@ -704,7 +989,7 @@ watch(isMobileMenuOpen, (isOpen) => {
 .thinking-dots .dot {
   width: 6px;
   height: 6px;
-  background-color: #909399;
+  background-color: var(--primary-color);
   border-radius: 50%;
   animation: thinking-bounce 1.4s infinite ease-in-out both;
 }
@@ -749,7 +1034,7 @@ watch(isMobileMenuOpen, (isOpen) => {
     left: -240px;
     top: 0;
     height: 100vh;
-    transition: left 0.3s ease;
+    transition: left var(--transition-base);
   }
   
   .sidebar-collapsed {
@@ -769,8 +1054,9 @@ watch(isMobileMenuOpen, (isOpen) => {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.7);
     z-index: 99;
+    backdrop-filter: blur(4px);
   }
   
   .mobile-header {

@@ -8,36 +8,51 @@
 
 :root {
   /* 主题色 */
-  --primary-color: #409EFF;
-  --primary-light: #53a8ff;
-  --primary-dark: #337ecc;
+  --primary-color: #00D4FF;
+  --primary-light: #33DDFF;
+  --primary-dark: #00A8CC;
   
   /* 功能色 */
-  --success-color: #67C23A;
-  --warning-color: #E6A23C;
-  --danger-color: #F56C6C;
-  --info-color: #909399;
+  --success-color: #00FFA3;
+  --warning-color: #FFB800;
+  --danger-color: #FF4D6A;
+  --info-color: #7D8590;
   
   /* 文字色 */
-  --text-primary: #303133;
-  --text-regular: #606266;
-  --text-secondary: #909399;
-  --text-placeholder: #c0c4cc;
+  --text-primary: #E6EDF3;
+  --text-regular: #B0BAC5;
+  --text-secondary: #7D8590;
+  --text-placeholder: #484F58;
   
   /* 边框色 */
-  --border-base: #dcdfe6;
-  --border-light: #e4e7ed;
-  --border-lighter: #ebeef5;
+  --border-base: #30363D;
+  --border-light: #21262D;
+  --border-lighter: #1A1F26;
   
   /* 背景色 */
-  --bg-base: #f5f7fa;
-  --bg-light: #fafafa;
-  --bg-white: #ffffff;
+  --bg-base: #0A0E14;
+  --bg-light: #0D1117;
+  --bg-white: #161B22;
   
   /* 阴影 */
-  --shadow-base: 0 2px 12px rgba(0, 0, 0, 0.08);
-  --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-dark: 0 4px 20px rgba(0, 0, 0, 0.12);
+  --shadow-base: 0 0 20px rgba(0, 212, 255, 0.08);
+  --shadow-light: 0 0 10px rgba(0, 212, 255, 0.04);
+  --shadow-dark: 0 0 30px rgba(0, 212, 255, 0.15);
+  
+  /* 发光效果 */
+  --glow-primary: 0 0 20px rgba(0, 212, 255, 0.15);
+  --glow-strong: 0 0 30px rgba(0, 212, 255, 0.25);
+  
+  /* 渐变 */
+  --gradient-tech: linear-gradient(135deg, #00D4FF, #0077FF);
+  --gradient-tech-subtle: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 119, 255, 0.05));
+  
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
   
   /* 圆角 */
   --radius-small: 4px;
@@ -177,26 +192,26 @@ textarea:disabled {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #c0c4cc;
+  background-color: var(--border-base);
   border-radius: var(--radius-small);
   transition: background-color var(--transition-fast);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #909399;
+  background-color: var(--text-secondary);
 }
 
 /* Firefox 滚动条 */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #c0c4cc var(--bg-light);
+  scrollbar-color: var(--border-base) var(--bg-light);
 }
 
 /* ==================== 文本选择样式 ==================== */
 
 ::selection {
-  background-color: var(--primary-color);
-  color: #ffffff;
+  background-color: rgba(0, 212, 255, 0.3);
+  color: #E6EDF3;
 }
 
 /* ==================== 工具类 ==================== */
@@ -285,6 +300,12 @@ textarea:disabled {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* 电光蓝脉冲发光 */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(0, 212, 255, 0.1); }
+  50% { box-shadow: 0 0 25px rgba(0, 212, 255, 0.3); }
 }
 
 /* ==================== 响应式工具类 ==================== */

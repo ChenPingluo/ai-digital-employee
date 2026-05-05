@@ -158,3 +158,51 @@ class StreamChatResponse(BaseModel):
         None,
         description="当前正在执行的工具调用"
     )
+
+
+class ConversationCreate(BaseModel):
+    """
+    会话创建请求模式
+    
+    Attributes:
+        title: 会话标题，可选
+    """
+    title: Optional[str] = None
+
+
+class ConversationResponse(BaseModel):
+    """
+    会话响应模式
+    
+    Attributes:
+        id: 会话 ID
+        title: 会话标题
+        created_at: 创建时间
+        updated_at: 更新时间
+    """
+    id: str
+    title: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class MessageResponse(BaseModel):
+    """
+    消息响应模式
+    
+    Attributes:
+        id: 消息 ID
+        role: 消息角色
+        content: 消息内容
+        created_at: 创建时间
+    """
+    id: str
+    role: str
+    content: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

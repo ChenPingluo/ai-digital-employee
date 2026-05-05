@@ -10,7 +10,7 @@ from typing import List
 
 from langchain.tools import StructuredTool
 from langchain_core.tools import BaseTool
-from pydantic import BaseModel, Field
+from langchain_core.pydantic_v1 import BaseModel, Field
 
 from app.services import weather_service
 
@@ -57,16 +57,24 @@ def get_weather(city: str) -> str:
         
         # 格式化输出
         city_name = weather_data.get("city", city)
+        province = weather_data.get("province", "")
         weather = weather_data.get("weather", "未知")
         temperature = weather_data.get("temperature", "N/A")
+        humidity = weather_data.get("humidity")
+        wind_direction = weather_data.get("wind_direction", "")
+        wind_power = weather_data.get("wind_power", "")
         
-        # 获取天气图标
-        code = weather_data.get("code", "99")
-        icon = weather_service.get_weather_icon(code)
-        
-        result = f"{icon} {city_name}天气\n\n"
+        location_str = f"{province} {city_name}".strip() if province else city_name
+        result = f"🌍 {location_str}天气\n\n"
         result += f"🌡️ 温度：{temperature}°C\n"
         result += f"☁️ 天气：{weather}\n"
+        if humidity is not None:
+            result += f"💧 湿度：{humidity}%\n"
+        if wind_direction:
+            result += f"🌬️ 风向：{wind_direction}"
+            if wind_power:
+                result += f" {wind_power}"
+            result += "\n"
         
         # 添加更新时间（如果有）
         update_time = weather_data.get("update_time")

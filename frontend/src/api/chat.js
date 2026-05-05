@@ -20,13 +20,64 @@ import request from './request'
  * const response = await sendMessage('帮我创建一个待办事项')
  * // response: { content: '好的，我已经为您创建了待办事项...', ... }
  */
-export function sendMessage(message) {
+export function sendMessage(message, conversationId = null) {
   return request({
-    url: '/chat',
+    url: '/chat/',
     method: 'POST',
     data: {
-      message: message
+      message: message,
+      conversation_id: conversationId
     }
+  })
+}
+
+// ==================== 会话管理 ====================
+
+/**
+ * 获取用户的所有会话
+ * @returns {Promise<Array>} 会话列表
+ */
+export function getConversations() {
+  return request({
+    url: '/chat/conversations',
+    method: 'GET'
+  })
+}
+
+/**
+ * 获取会话的消息历史
+ * @param {string} conversationId - 会话 ID
+ * @returns {Promise<Array>} 消息列表
+ */
+export function getConversationMessages(conversationId) {
+  return request({
+    url: `/chat/conversations/${conversationId}/messages`,
+    method: 'GET'
+  })
+}
+
+/**
+ * 创建新会话
+ * @param {string|null} title - 会话标题
+ * @returns {Promise<Object>} 新建的会话
+ */
+export function createConversation(title = null) {
+  return request({
+    url: '/chat/conversations',
+    method: 'POST',
+    data: { title }
+  })
+}
+
+/**
+ * 删除会话
+ * @param {string} conversationId - 会话 ID
+ * @returns {Promise<Object>} 删除结果
+ */
+export function deleteConversation(conversationId) {
+  return request({
+    url: `/chat/conversations/${conversationId}`,
+    method: 'DELETE'
   })
 }
 
@@ -48,7 +99,7 @@ export function sendMessage(message) {
  *   // 实时更新 UI 显示
  * })
  */
-export async function sendMessageStream(message, onChunk) {
+export async function sendMessageStream(message, onChunk, conversationId = null) {
   // 从 localStorage 获取认证令牌
   const token = localStorage.getItem('access_token')
   
@@ -60,7 +111,10 @@ export async function sendMessageStream(message, onChunk) {
       // 如果有 token，添加认证头
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     },
-    body: JSON.stringify({ message })
+    body: JSON.stringify({ 
+      message,
+      conversation_id: conversationId 
+    })
   })
   
   // 检查响应状态
@@ -158,5 +212,9 @@ export async function sendMessageStream(message, onChunk) {
 
 export default {
   sendMessage,
-  sendMessageStream
+  sendMessageStream,
+  getConversations,
+  getConversationMessages,
+  createConversation,
+  deleteConversation
 }

@@ -9,11 +9,14 @@ from app.models.user import User
 from app.models.todo import Todo
 from app.models.meeting_room import MeetingRoom
 from app.models.reservation import Reservation
+from app.models.conversation import Conversation, ChatMessageRecord
 
 # 导出所有模型，便于统一导入
 __all__ = [
     "User",
     "Todo", 
     "MeetingRoom",
-    "Reservation"
+    "Reservation",
+    "Conversation",
+    "ChatMessageRecord"
 ]

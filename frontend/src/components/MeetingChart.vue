@@ -109,14 +109,14 @@ function updateChart() {
       axisPointer: {
         type: 'cross',
         crossStyle: {
-          color: '#999'
+          color: '#7D8590'
         }
       },
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderColor: '#eee',
+      backgroundColor: 'rgba(13, 17, 23, 0.95)',
+      borderColor: '#30363D',
       borderWidth: 1,
       textStyle: {
-        color: '#303133'
+        color: '#E6EDF3'
       },
       formatter: function(params) {
         let result = `<strong>${params[0].axisValue}</strong><br/>`
@@ -137,7 +137,7 @@ function updateChart() {
       itemHeight: 10,
       textStyle: {
         fontSize: 12,
-        color: '#606266'
+        color: '#B0BAC5'
       }
     },
     
@@ -158,14 +158,14 @@ function updateChart() {
         type: 'shadow'
       },
       axisLabel: {
-        color: '#606266',
+        color: '#7D8590',
         fontSize: 12,
         rotate: roomNames.length > 5 ? 30 : 0,
         interval: 0
       },
       axisLine: {
         lineStyle: {
-          color: '#dcdfe6'
+          color: '#30363D'
         }
       }
     },
@@ -180,17 +180,17 @@ function updateChart() {
         alignTicks: true,
         axisLabel: {
           formatter: '{value}',
-          color: '#606266'
+          color: '#7D8590'
         },
         axisLine: {
           show: true,
           lineStyle: {
-            color: '#409EFF'
+            color: '#30363D'
           }
         },
         splitLine: {
           lineStyle: {
-            color: '#ebeef5',
+            color: '#21262D',
             type: 'dashed'
           }
         }
@@ -203,12 +203,12 @@ function updateChart() {
         alignTicks: true,
         axisLabel: {
           formatter: '{value}h',
-          color: '#606266'
+          color: '#7D8590'
         },
         axisLine: {
           show: true,
           lineStyle: {
-            color: '#67C23A'
+            color: '#30363D'
           }
         },
         splitLine: {
@@ -226,16 +226,16 @@ function updateChart() {
         barWidth: '40%',
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#409EFF' },
-            { offset: 1, color: '#79bbff' }
+            { offset: 0, color: '#00D4FF' },
+            { offset: 1, color: 'rgba(0, 212, 255, 0.2)' }
           ]),
           borderRadius: [4, 4, 0, 0]
         },
         emphasis: {
           itemStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#337ecc' },
-              { offset: 1, color: '#409EFF' }
+              { offset: 0, color: '#33DDFF' },
+              { offset: 1, color: 'rgba(0, 212, 255, 0.4)' }
             ])
           }
         },
@@ -250,17 +250,17 @@ function updateChart() {
         symbolSize: 8,
         lineStyle: {
           width: 3,
-          color: '#67C23A'
+          color: '#00FFA3'
         },
         itemStyle: {
-          color: '#67C23A',
+          color: '#00FFA3',
           borderWidth: 2,
-          borderColor: '#fff'
+          borderColor: '#0D1117'
         },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(103, 194, 58, 0.3)' },
-            { offset: 1, color: 'rgba(103, 194, 58, 0.05)' }
+            { offset: 0, color: 'rgba(0, 255, 163, 0.1)' },
+            { offset: 1, color: 'rgba(0, 255, 163, 0)' }
           ])
         },
         data: totalHours
@@ -331,7 +331,7 @@ watch(
   padding: 0 0 12px 0;
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-primary);
 }
 
 /* ==================== 图表容器 ==================== */
@@ -348,6 +348,10 @@ watch(
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+.no-data :deep(.el-empty__description p) {
+  color: var(--text-secondary);
 }
 
 /* ==================== 响应式适配 ==================== */

@@ -206,8 +206,9 @@ function renderContent(content) {
 
 /* AI 头像样式 */
 .avatar-ai {
-  background: linear-gradient(135deg, #409EFF 0%, #53a8ff 100%);
-  color: white;
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
 }
 
 /* 用户头像样式 */
@@ -238,7 +239,7 @@ function renderContent(content) {
 
 .message-bubble {
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-large);
   word-wrap: break-word;
   word-break: break-word;
   line-height: 1.6;
@@ -246,22 +247,25 @@ function renderContent(content) {
 
 /* AI 消息气泡样式 */
 .assistant-message .message-bubble {
-  background-color: #f4f4f5;
-  color: #303133;
-  border-top-left-radius: 4px;
+  background-color: var(--bg-white);
+  color: var(--text-primary);
+  border: 1px solid var(--border-base);
+  border-left: 3px solid var(--primary-color);
+  border-top-left-radius: var(--radius-small);
 }
 
 /* 用户消息气泡样式 */
 .user-message .message-bubble {
-  background: linear-gradient(135deg, #409EFF 0%, #53a8ff 100%);
-  color: white;
-  border-top-right-radius: 4px;
+  background: var(--gradient-tech);
+  color: #FFFFFF;
+  border-top-right-radius: var(--radius-small);
 }
 
 /* 错误消息样式 */
 .error-message .message-bubble {
-  background-color: #fef0f0;
-  color: #f56c6c;
+  background-color: rgba(255, 77, 106, 0.1);
+  color: var(--danger-color);
+  border: 1px solid rgba(255, 77, 106, 0.3);
 }
 
 /* ==================== 消息内容 ==================== */
@@ -272,10 +276,12 @@ function renderContent(content) {
 
 /* 代码块样式 */
 .message-content :deep(.code-block) {
-  background-color: #1e1e1e;
+  background-color: #0D1117;
   color: #d4d4d4;
   padding: 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-base);
+  border: 1px solid var(--border-base);
+  border-left: 3px solid var(--primary-color);
   margin: 8px 0;
   overflow-x: auto;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
@@ -285,10 +291,10 @@ function renderContent(content) {
 
 /* 行内代码样式 */
 .message-content :deep(.inline-code) {
-  background-color: rgba(0, 0, 0, 0.06);
-  color: #c7254e;
+  background-color: rgba(0, 212, 255, 0.08);
+  color: var(--primary-light);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
 }
@@ -299,11 +305,68 @@ function renderContent(content) {
   color: white;
 }
 
+/* Markdown 链接 */
+.message-content :deep(a) {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.message-content :deep(a:hover) {
+  text-decoration: underline;
+  color: var(--primary-light);
+}
+
+/* Markdown 引用块 */
+.message-content :deep(blockquote) {
+  border-left: 3px solid var(--primary-color);
+  background: rgba(0, 212, 255, 0.03);
+  margin: 8px 0;
+  padding: 8px 12px;
+  color: var(--text-regular);
+}
+
+/* Markdown 表格 */
+.message-content :deep(table) {
+  border-collapse: collapse;
+  margin: 8px 0;
+  width: 100%;
+}
+
+.message-content :deep(th),
+.message-content :deep(td) {
+  border: 1px solid var(--border-base);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.message-content :deep(th) {
+  background: var(--bg-light);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Markdown 列表标记 */
+.message-content :deep(ul),
+.message-content :deep(ol) {
+  padding-left: 20px;
+  margin: 4px 0;
+}
+
+.message-content :deep(li::marker) {
+  color: var(--primary-color);
+}
+
+/* Markdown 粗体 */
+.message-content :deep(strong) {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 /* ==================== 时间戳 ==================== */
 
 .message-time {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-secondary);
   margin-top: 6px;
   padding: 0 4px;
 }
@@ -320,7 +383,7 @@ function renderContent(content) {
 .typing-indicator .dot {
   width: 6px;
   height: 6px;
-  background-color: #909399;
+  background-color: var(--primary-color);
   border-radius: 50%;
   animation: typing-bounce 1.4s infinite ease-in-out both;
 }
@@ -336,9 +399,11 @@ function renderContent(content) {
 @keyframes typing-bounce {
   0%, 80%, 100% {
     transform: scale(0);
+    opacity: 0.4;
   }
   40% {
     transform: scale(1);
+    opacity: 1;
   }
 }
 

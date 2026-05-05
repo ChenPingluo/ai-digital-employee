@@ -9,7 +9,13 @@
 
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { sendMessage as sendMessageApi } from '@/api/chat'
+import {
+  sendMessage as sendMessageApi,
+  getConversations as getConversationsApi,
+  getConversationMessages as getConversationMessagesApi,
+  createConversation as createConversationApi,
+  deleteConversation as deleteConversationApi
+} from '@/api/chat'
 import { ElMessage } from 'element-plus'
 
 // ==================== 定义 Store ====================
@@ -40,6 +46,16 @@ export const useChatStore = defineStore('chat', () => {
    * 当前正在生成的消息内容（用于流式显示）
    */
   const streamingContent = ref('')
+  
+  /**
+   * 当前会话 ID
+   */
+  const currentConversationId = ref(null)
+  
+  /**
+   * 会话列表
+   */
+  const conversations = ref([])
   
   // ==================== 辅助函数 ====================
   
@@ -88,8 +104,13 @@ export const useChatStore = defineStore('chat', () => {
     streamingContent.value = ''
     
     try {
-      // 调用 API 发送消息
-      const response = await sendMessageApi(content.trim())
+      // 调用 API 发送消息（传递当前会话 ID）
+      const response = await sendMessageApi(content.trim(), currentConversationId.value)
+      
+      // 从响应中更新会话 ID
+      if (response.conversation_id) {
+        currentConversationId.value = response.conversation_id
+      }
       
       // 创建 AI 回复消息
       const assistantMessage = {
@@ -101,6 +122,9 @@ export const useChatStore = defineStore('chat', () => {
       
       // 添加 AI 回复到列表
       messages.value.push(assistantMessage)
+      
+      // 刷新会话列表（可能新建了会话或标题有变化）
+      loadConversations()
       
     } catch (error) {
       console.error('发送消息失败:', error)
@@ -171,8 +195,13 @@ export const useChatStore = defineStore('chat', () => {
       // 导入流式 API
       const { sendMessageStream } = await import('@/api/chat')
       
-      // 调用流式 API
+      // 调用流式 API（传递当前会话 ID）
       await sendMessageStream(content.trim(), (chunk) => {
+        // 从响应中提取并更新 conversation_id
+        if (chunk.conversation_id) {
+          currentConversationId.value = chunk.conversation_id
+        }
+        
         // 更新流式内容
         const text = chunk.content || chunk.text || ''
         streamingContent.value += text
@@ -182,13 +211,16 @@ export const useChatStore = defineStore('chat', () => {
         if (msgIndex !== -1) {
           messages.value[msgIndex].content = streamingContent.value
         }
-      })
+      }, currentConversationId.value)
       
       // 流式传输完成，移除标记
       const msgIndex = messages.value.findIndex(m => m.id === assistantMessageId)
       if (msgIndex !== -1) {
         messages.value[msgIndex].isStreaming = false
       }
+      
+      // 刷新会话列表（可能新建了会话或标题有变化）
+      loadConversations()
       
     } catch (error) {
       console.error('发送消息失败:', error)
@@ -215,6 +247,7 @@ export const useChatStore = defineStore('chat', () => {
   function clearMessages() {
     messages.value = []
     streamingContent.value = ''
+    currentConversationId.value = null
   }
   
   /**
@@ -232,6 +265,68 @@ export const useChatStore = defineStore('chat', () => {
     messages.value.push(message)
   }
   
+  // ==================== 会话管理方法 ====================
+  
+  /**
+   * 加载会话列表
+   */
+  async function loadConversations() {
+    try {
+      const res = await getConversationsApi()
+      conversations.value = res
+    } catch (error) {
+      console.error('加载会话列表失败:', error)
+    }
+  }
+  
+  /**
+   * 切换会话
+   * @param {string} conversationId - 目标会话 ID
+   */
+  async function switchConversation(conversationId) {
+    currentConversationId.value = conversationId
+    try {
+      const res = await getConversationMessagesApi(conversationId)
+      // 将后端返回的消息转换为前端消息格式
+      messages.value = res.map(msg => ({
+        id: msg.id || generateMessageId(),
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.created_at
+      }))
+    } catch (error) {
+      console.error('加载会话消息失败:', error)
+    }
+  }
+  
+  /**
+   * 新建话题（清空当前会话）
+   */
+  function createNewConversation() {
+    currentConversationId.value = null
+    messages.value = []
+    streamingContent.value = ''
+  }
+  
+  /**
+   * 删除会话
+   * @param {string} conversationId - 要删除的会话 ID
+   */
+  async function deleteConversation(conversationId) {
+    try {
+      await deleteConversationApi(conversationId)
+      // 如果删除的是当前会话，清空消息
+      if (currentConversationId.value === conversationId) {
+        currentConversationId.value = null
+        messages.value = []
+      }
+      // 刷新会话列表
+      await loadConversations()
+    } catch (error) {
+      console.error('删除会话失败:', error)
+    }
+  }
+  
   // ==================== 返回暴露的内容 ====================
   
   return {
@@ -239,12 +334,18 @@ export const useChatStore = defineStore('chat', () => {
     messages,
     isLoading,
     streamingContent,
+    currentConversationId,
+    conversations,
     
     // 方法
     sendMessage,
     sendMessageWithStream,
     clearMessages,
-    addSystemMessage
+    addSystemMessage,
+    loadConversations,
+    switchConversation,
+    createNewConversation,
+    deleteConversation
   }
 })
 

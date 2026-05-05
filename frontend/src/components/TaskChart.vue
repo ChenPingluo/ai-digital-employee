@@ -89,10 +89,10 @@ const hasData = computed(() => {
  * 状态颜色配置
  */
 const colorMap = {
-  pending: '#E6A23C',      // 警告色 - 待处理
-  in_progress: '#409EFF',  // 主色 - 进行中
-  completed: '#67C23A',    // 成功色 - 已完成
-  cancelled: '#F56C6C'     // 危险色 - 已取消
+  pending: '#00D4FF',      // 电光蓝 - 待处理
+  in_progress: '#00FFA3',  // 亮绿 - 进行中
+  completed: '#FFB800',    // 亮橙 - 已完成
+  cancelled: '#FF4D6A'     // 亮红 - 已取消
 }
 
 /**
@@ -140,11 +140,11 @@ function updateChart() {
     tooltip: {
       trigger: 'item',
       formatter: '{b}: {c} ({d}%)',
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderColor: '#eee',
+      backgroundColor: 'rgba(13, 17, 23, 0.95)',
+      borderColor: '#30363D',
       borderWidth: 1,
       textStyle: {
-        color: '#303133'
+        color: '#E6EDF3'
       }
     },
     
@@ -158,7 +158,7 @@ function updateChart() {
       itemGap: 16,
       textStyle: {
         fontSize: 12,
-        color: '#606266'
+        color: '#B0BAC5'
       }
     },
     
@@ -177,25 +177,29 @@ function updateChart() {
           show: true,
           formatter: '{b}\n{c}',
           fontSize: 12,
-          color: '#606266'
+          color: '#B0BAC5'
         },
         // 标签引导线
         labelLine: {
           show: true,
           length: 10,
-          length2: 15
+          length2: 15,
+          lineStyle: {
+            color: '#30363D'
+          }
         },
         // 高亮状态
         emphasis: {
           label: {
             show: true,
             fontSize: 14,
-            fontWeight: 'bold'
+            fontWeight: 'bold',
+            color: '#E6EDF3'
           },
           itemStyle: {
-            shadowBlur: 10,
+            shadowBlur: 20,
             shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.2)'
+            shadowColor: 'rgba(0, 212, 255, 0.4)'
           }
         },
         // 数据
@@ -267,7 +271,7 @@ watch(
   padding: 0 0 12px 0;
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-primary);
 }
 
 /* ==================== 图表容器 ==================== */
@@ -284,6 +288,10 @@ watch(
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+.no-data :deep(.el-empty__description p) {
+  color: var(--text-secondary);
 }
 
 /* ==================== 响应式适配 ==================== */

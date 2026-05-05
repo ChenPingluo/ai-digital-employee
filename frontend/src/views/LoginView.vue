@@ -432,7 +432,22 @@ const resetRegisterForm = () => {
   padding: 20px;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0A0E14 0%, #0D1520 50%, #0A0E14 100%);
+}
+
+/* 网格线叠加效果 */
+.login-view::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0, 212, 255, 0.03) 0px, transparent 1px, transparent 60px),
+    repeating-linear-gradient(90deg, rgba(0, 212, 255, 0.03) 0px, transparent 1px, transparent 60px);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* ==================== 背景装饰 ==================== */
@@ -450,8 +465,7 @@ const resetRegisterForm = () => {
 .bg-shape {
   position: absolute;
   border-radius: 50%;
-  opacity: 0.1;
-  background: white;
+  background: rgba(0, 212, 255, 0.06);
 }
 
 .shape-1 {
@@ -459,6 +473,7 @@ const resetRegisterForm = () => {
   height: 400px;
   top: -100px;
   right: -100px;
+  background: rgba(0, 212, 255, 0.05);
   animation: float 6s ease-in-out infinite;
 }
 
@@ -467,6 +482,7 @@ const resetRegisterForm = () => {
   height: 300px;
   bottom: -50px;
   left: -50px;
+  background: rgba(0, 212, 255, 0.08);
   animation: float 8s ease-in-out infinite reverse;
 }
 
@@ -475,6 +491,7 @@ const resetRegisterForm = () => {
   height: 200px;
   top: 50%;
   left: 10%;
+  background: rgba(0, 212, 255, 0.1);
   animation: float 7s ease-in-out infinite 1s;
 }
 
@@ -492,12 +509,28 @@ const resetRegisterForm = () => {
 .login-card {
   width: 100%;
   max-width: 420px;
-  border-radius: 16px;
+  border-radius: var(--radius-large);
   z-index: 1;
+  background: rgba(13, 17, 23, 0.8) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 212, 255, 0.15) !important;
+  box-shadow: var(--shadow-base);
+  transition: border-color var(--transition-base);
+}
+
+.login-card:hover {
+  border-color: rgba(0, 212, 255, 0.3) !important;
 }
 
 .login-card :deep(.el-card__body) {
   padding: 40px;
+}
+
+/* 覆盖 el-card 默认背景与边框 */
+:deep(.el-card) {
+  background: transparent;
+  border: none;
 }
 
 /* ==================== 标题区域 ==================== */
@@ -516,13 +549,13 @@ const resetRegisterForm = () => {
 .login-header h1 {
   margin: 0 0 8px 0;
   font-size: 24px;
-  color: #303133;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .login-header p {
   margin: 0;
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -532,8 +565,49 @@ const resetRegisterForm = () => {
   margin-bottom: 16px;
 }
 
+/* 输入框深色适配 */
 .login-form :deep(.el-input__wrapper) {
   padding: 8px 12px;
+  background-color: var(--bg-white);
+  border: 1px solid var(--border-base);
+  box-shadow: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.login-form :deep(.el-input__wrapper):hover {
+  border-color: var(--primary-dark);
+}
+
+.login-form :deep(.el-input__wrapper.is-focus),
+.login-form :deep(.el-input__wrapper:focus) {
+  border-color: var(--primary-color) !important;
+  box-shadow: var(--glow-primary) !important;
+}
+
+.login-form :deep(.el-input__inner) {
+  color: var(--text-primary);
+}
+
+.login-form :deep(.el-input__inner::placeholder) {
+  color: var(--text-placeholder);
+}
+
+.login-form :deep(.el-input__prefix .el-icon) {
+  color: var(--text-secondary);
+}
+
+.login-form :deep(.el-input__suffix .el-icon) {
+  color: var(--text-secondary);
+}
+
+/* 表单标签 */
+.login-form :deep(.el-form-item__label) {
+  color: var(--text-regular);
+}
+
+/* 表单验证错误信息 */
+.login-form :deep(.el-form-item__error) {
+  color: var(--danger-color);
 }
 
 /* 登录选项 */
@@ -544,25 +618,78 @@ const resetRegisterForm = () => {
   margin-bottom: 24px;
 }
 
+/* Checkbox 深色适配 */
+.login-options :deep(.el-checkbox__label) {
+  color: var(--text-regular);
+}
+
+.login-options :deep(.el-checkbox__inner) {
+  background-color: var(--bg-white);
+  border-color: var(--border-base);
+}
+
+.login-options :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.login-options :deep(.el-checkbox__input.is-checked + .el-checkbox__label) {
+  color: var(--primary-color);
+}
+
+/* 忘记密码链接 */
+.login-options :deep(.el-link--primary) {
+  color: var(--primary-color);
+}
+
+.login-options :deep(.el-link--primary:hover) {
+  color: var(--primary-light);
+}
+
+.login-options :deep(.el-link.is-disabled) {
+  color: var(--text-placeholder);
+}
+
 /* 提交按钮 */
 .submit-button {
   width: 100%;
   height: 46px;
   font-size: 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-base);
+  background: var(--gradient-tech) !important;
+  border: none !important;
+  color: #fff !important;
+  transition: box-shadow var(--transition-base), transform var(--transition-fast);
+}
+
+.submit-button:hover {
+  box-shadow: var(--glow-strong) !important;
+}
+
+.submit-button:active {
+  transform: scale(0.98);
 }
 
 /* ==================== 底部提示 ==================== */
 
 .login-footer {
   text-align: center;
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
-.login-footer .el-link {
+.login-footer span {
+  color: var(--text-secondary);
+}
+
+.login-footer :deep(.el-link--primary) {
+  color: var(--primary-color);
   margin-left: 4px;
   font-size: 14px;
+}
+
+.login-footer :deep(.el-link--primary:hover) {
+  color: var(--primary-light);
 }
 
 /* ==================== 版权信息 ==================== */
@@ -570,7 +697,7 @@ const resetRegisterForm = () => {
 .copyright {
   position: absolute;
   bottom: 20px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   font-size: 12px;
   z-index: 1;
 }

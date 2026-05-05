@@ -131,13 +131,15 @@ class Reservation(Base):
     # 与会议室的多对一关系
     room: Mapped["MeetingRoom"] = relationship(
         "MeetingRoom",
-        back_populates="reservations"
+        back_populates="reservations",
+        lazy="noload"
     )
     
     # 与用户的多对一关系
     user: Mapped["User"] = relationship(
         "User",
-        back_populates="reservations"
+        back_populates="reservations",
+        lazy="noload"
     )
     
     def __repr__(self) -> str:
