@@ -36,6 +36,7 @@ docker-images-backup.tar
 
 # Iteration reports (local only)
 AI数字员工系统_*.md
+AI数字员工系统_*.assets/
 
 # Lock files (optional, uncomment if needed)
 # frontend/package-lock.json
