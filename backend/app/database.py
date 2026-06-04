@@ -5,7 +5,6 @@
 使用 SQLAlchemy 2.0 的异步引擎和会话管理。
 提供异步数据库连接池和依赖注入支持。
 """
-
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     AsyncEngine,
@@ -14,14 +13,14 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase
 from typing import AsyncGenerator
-
+from sqlalchemy import text
 from app.config import settings
 
 
 class Base(DeclarativeBase):
     """
     SQLAlchemy ORM 基类
-    
+
     所有数据库模型都应继承此类。
     使用 SQLAlchemy 2.0 的 DeclarativeBase 作为基础。
     """
@@ -45,7 +44,7 @@ engine: AsyncEngine = create_async_engine(
 )
 
 
-# ==================== 创建异步会话工厂 ====================
+
 # 使用 async_sessionmaker 创建会话工厂，用于生成数据库会话
 async_session_maker = async_sessionmaker(
     bind=engine,
@@ -63,25 +62,9 @@ async_session_maker = async_sessionmaker(
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     数据库会话依赖注入生成器
-    
+
     用于 FastAPI 的依赖注入系统，为每个请求提供独立的数据库会话。
     会话在请求结束时自动关闭，确保资源正确释放。
-    
-    Yields:
-        AsyncSession: 异步数据库会话实例
-    
-    Example:
-        ```python
-        from fastapi import Depends
-        from sqlalchemy.ext.asyncio import AsyncSession
-        from app.database import get_db
-        
-        @app.get("/users")
-        async def get_users(db: AsyncSession = Depends(get_db)):
-            # 使用 db 进行数据库操作
-            result = await db.execute(select(User))
-            return result.scalars().all()
-        ```
     """
     async with async_session_maker() as session:
         try:
@@ -101,7 +84,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 async def init_db() -> None:
     """
     初始化数据库表结构
-    
+
     在应用启动时调用，创建所有已定义的数据库表。
     注意：生产环境建议使用 Alembic 进行数据库迁移管理。
     """
@@ -113,7 +96,16 @@ async def init_db() -> None:
 async def close_db() -> None:
     """
     关闭数据库连接池
-    
+
     在应用关闭时调用，释放所有数据库连接资源。
     """
     await engine.dispose()
+
+async def check_db_connection() -> bool:
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return True
+    except Exception as e:
+        print(f"数据库健康检查失败: {e}")
+        return False

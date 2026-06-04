@@ -10,7 +10,6 @@
 """
 
 import uuid
-from datetime import datetime
 from typing import List, Optional
 
 from langchain.tools import StructuredTool
@@ -18,6 +17,7 @@ from langchain_core.tools import BaseTool
 from langchain_core.pydantic_v1 import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.datetime_utils import parse_user_datetime, to_beijing_time
 from app.services import todo_service
 from app.schemas.todo import TodoCreate, TodoUpdate
 
@@ -55,8 +55,6 @@ class UpdateTodoStatusInput(BaseModel):
         description="新状态：pending、in_progress、completed、cancelled"
     )
 
-
-# ==================== 工具工厂函数 ====================
 
 def get_todo_tools(user_id: str, db_session: AsyncSession) -> List[BaseTool]:
     """
@@ -96,7 +94,7 @@ def get_todo_tools(user_id: str, db_session: AsyncSession) -> List[BaseTool]:
             parsed_due_date = None
             if due_date:
                 try:
-                    parsed_due_date = datetime.fromisoformat(due_date.replace("Z", "+00:00"))
+                    parsed_due_date = parse_user_datetime(due_date)
                 except ValueError:
                     return f"截止日期格式错误：{due_date}，请使用 ISO 格式如 '2024-12-31T18:00:00'"
             
@@ -118,16 +116,17 @@ def get_todo_tools(user_id: str, db_session: AsyncSession) -> List[BaseTool]:
             priority_labels = {0: "低", 1: "中", 2: "高", 3: "紧急"}
             priority_label = priority_labels.get(priority, "未知")
             
-            result = f"✅ 已创建待办事项：「{title}」\n"
+            result = f"  已创建待办事项：「{title}」\n"
             result += f"   优先级：{priority_label}\n"
             result += f"   ID：{todo.id}"
             if parsed_due_date:
-                result += f"\n   截止日期：{parsed_due_date.strftime('%Y-%m-%d %H:%M')}"
+                display_due_date = to_beijing_time(parsed_due_date)
+                result += f"\n   截止日期：{display_due_date.strftime('%Y-%m-%d %H:%M')}"
             
             return result
             
         except Exception as e:
-            return f"❌ 创建待办事项失败：{str(e)}"
+            return f"创建待办事项失败：{str(e)}"
     
     async def list_todos(status: Optional[str] = None) -> str:
         """
@@ -151,7 +150,7 @@ def get_todo_tools(user_id: str, db_session: AsyncSession) -> List[BaseTool]:
             
             if not todos:
                 status_text = f"状态为「{status}」的" if status else ""
-                return f"📋 暂无{status_text}待办事项"
+                return f" 暂无{status_text}待办事项"
             
             # 格式化输出
             priority_labels = {0: "低", 1: "中", 2: "高", 3: "紧急"}
@@ -162,7 +161,7 @@ def get_todo_tools(user_id: str, db_session: AsyncSession) -> List[BaseTool]:
                 "cancelled": "已取消"
             }
             
-            result = f"📋 待办事项列表（共 {total} 项）：\n\n"
+            result = f" 待办事项列表（共 {total} 项）：\n\n"
             
             for i, todo in enumerate(todos, 1):
                 priority_label = priority_labels.get(todo.priority, "未知")
@@ -179,13 +178,14 @@ def get_todo_tools(user_id: str, db_session: AsyncSession) -> List[BaseTool]:
                 result += f"{i}. {status_icon} {todo.title}\n"
                 result += f"   状态：{status_label} | 优先级：{priority_label}\n"
                 if todo.due_date:
-                    result += f"   截止：{todo.due_date.strftime('%Y-%m-%d %H:%M')}\n"
+                    display_due_date = to_beijing_time(todo.due_date)
+                    result += f"   截止：{display_due_date.strftime('%Y-%m-%d %H:%M')}\n"
                 result += f"   ID：{todo.id}\n\n"
             
             return result.strip()
             
         except Exception as e:
-            return f"❌ 查询待办事项失败：{str(e)}"
+            return f" 查询待办事项失败：{str(e)}"
     
     async def update_todo_status(todo_id: str, status: str) -> str:
         """
@@ -202,7 +202,7 @@ def get_todo_tools(user_id: str, db_session: AsyncSession) -> List[BaseTool]:
             # 验证状态值
             valid_statuses = ["pending", "in_progress", "completed", "cancelled"]
             if status not in valid_statuses:
-                return f"❌ 无效的状态值：{status}，有效值为：{', '.join(valid_statuses)}"
+                return f" 无效的状态值：{status}，有效值为：{', '.join(valid_statuses)}"
             
             # 直接 await 异步操作
             todo = await todo_service.update_todo_status(
@@ -213,7 +213,7 @@ def get_todo_tools(user_id: str, db_session: AsyncSession) -> List[BaseTool]:
             )
             
             if todo is None:
-                return f"❌ 未找到待办事项（ID：{todo_id}）或无权修改"
+                return f" 未找到待办事项（ID：{todo_id}）或无权修改"
             
             status_labels = {
                 "pending": "待处理",
@@ -223,12 +223,12 @@ def get_todo_tools(user_id: str, db_session: AsyncSession) -> List[BaseTool]:
             }
             status_label = status_labels.get(status, status)
             
-            return f"✅ 已将「{todo.title}」的状态更新为：{status_label}"
+            return f" 已将「{todo.title}」的状态更新为：{status_label}"
             
         except ValueError:
-            return f"❌ 无效的待办事项 ID：{todo_id}"
+            return f" 无效的待办事项 ID：{todo_id}"
         except Exception as e:
-            return f"❌ 更新待办状态失败：{str(e)}"
+            return f" 更新待办状态失败：{str(e)}"
     
     # 创建 Langchain 工具（支持异步函数）
     tools = [

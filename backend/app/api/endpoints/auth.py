@@ -40,10 +40,10 @@ async def register(
     """
     用户注册接口
     
-    - **username**: 用户名（3-50个字符，唯一）
-    - **email**: 电子邮箱（必须有效，唯一）
-    - **password**: 密码（至少6个字符）
-    - **department**: 部门名称（可选）
+    - **username**: 用户名
+    - **email**: 电子邮箱
+    - **password**: 密码
+    - **department**: 部门名称
     """
     # 检查限流
     await check_rate_limit(
@@ -108,8 +108,8 @@ async def login(
     """
     用户登录接口
     
-    - **username**: 用户名或邮箱
-    - **password**: 用户密码
+    - username: 用户名或邮箱
+    - password: 用户密码
     
     返回 JWT 访问令牌和用户信息
     """
@@ -121,7 +121,7 @@ async def login(
     )
     
     try:
-        # 查询用户（支持用户名或邮箱登录）
+        # 查询用户
         result = await db.execute(
             select(User).where(
                 or_(
@@ -189,7 +189,7 @@ async def get_me(
     需要在请求头中携带有效的 Bearer Token
     
     Returns:
-        当前用户的详细信息（不包含密码）
+        当前用户的详细信息
     """
     return current_user
 
@@ -247,7 +247,7 @@ async def change_password(
     修改密码接口
     
     - **old_password**: 当前密码
-    - **new_password**: 新密码（至少6个字符）
+    - **new_password**: 新密码
     """
     try:
         # 验证旧密码

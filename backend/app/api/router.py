@@ -7,15 +7,10 @@ API 路由注册模块
 
 from fastapi import APIRouter
 
-from app.api.endpoints import auth, todos, meetings, chat, statistics
+from app.api.endpoints import auth, todos, meetings, chat, statistics, notifications
 
-
-# ==================== 创建主路由器 ====================
 # 所有 API 路由统一使用 /api/v1 前缀
 api_router = APIRouter(prefix="/api/v1")
-
-
-# ==================== 注册子路由 ====================
 
 # 认证相关接口
 api_router.include_router(
@@ -47,6 +42,10 @@ api_router.include_router(
     tags=["统计数据"]
 )
 
+# 提醒推送接口
+api_router.include_router(
+    notifications.router,
+    tags=["提醒推送"]
+)
 
-# ==================== 导出路由器 ====================
 __all__ = ["api_router"]

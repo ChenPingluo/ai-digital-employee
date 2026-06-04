@@ -102,14 +102,27 @@
       <!-- 侧边栏底部 -->
       <div class="sidebar-footer">
         <!-- 用户信息 -->
-        <div class="user-info" v-show="!isSidebarCollapsed">
-          <el-avatar :size="36" class="user-avatar">
-            <el-icon><User /></el-icon>
-          </el-avatar>
-          <div class="user-detail">
-            <span class="user-name">{{ userStore.displayName || '用户' }}</span>
-            <span class="user-role">在线</span>
+        <div class="footer-top">
+          <div class="user-info" v-show="!isSidebarCollapsed">
+            <el-avatar :size="36" class="user-avatar">
+              <el-icon><User /></el-icon>
+            </el-avatar>
+            <div class="user-detail">
+              <span class="user-name">{{ userStore.displayName || '用户' }}</span>
+              <span class="user-role">在线</span>
+            </div>
           </div>
+
+          <el-button
+            class="theme-toggle-btn"
+            text
+            @click="themeStore.toggleTheme()"
+          >
+            <el-icon>
+              <component :is="isDarkTheme ? Sunny : Moon" />
+            </el-icon>
+            <span v-show="!isSidebarCollapsed">{{ isDarkTheme ? '浅色界面' : '深色界面' }}</span>
+          </el-button>
         </div>
         
         <!-- 退出按钮 -->
@@ -200,7 +213,7 @@
           />
           
           <!-- 思考中动画 -->
-          <div v-if="isLoading" class="thinking-indicator">
+          <div v-if="isLoading && !hasStreamingMessage" class="thinking-indicator">
             <div class="thinking-avatar">
               <el-avatar :size="36" class="avatar-ai">
                 <el-icon :size="20"><Monitor /></el-icon>
@@ -255,7 +268,9 @@ import {
   Cloudy,
   Setting,
   Plus,
-  Delete
+  Delete,
+  Moon,
+  Sunny
 } from '@element-plus/icons-vue'
 
 // 导入组件
@@ -265,12 +280,14 @@ import ChatInput from '@/components/ChatInput.vue'
 // 导入 Store
 import { useChatStore } from '@/stores/chat'
 import { useUserStore } from '@/stores/user'
+import { useThemeStore } from '@/stores/theme'
 
 // ==================== 路由和状态 ====================
 
 const router = useRouter()
 const chatStore = useChatStore()
 const userStore = useUserStore()
+const themeStore = useThemeStore()
 
 // ==================== 响应式数据 ====================
 
@@ -305,6 +322,20 @@ const messages = computed(() => chatStore.messages)
  * 加载状态
  */
 const isLoading = computed(() => chatStore.isLoading)
+
+/**
+ * 当前流式内容
+ */
+const streamingContent = computed(() => chatStore.streamingContent)
+
+/**
+ * 是否存在正在流式生成的消息
+ */
+const hasStreamingMessage = computed(() => {
+  return messages.value.some((msg) => msg.isStreaming)
+})
+
+const isDarkTheme = computed(() => themeStore.isDark)
 
 // ==================== 功能介绍数据 ====================
 
@@ -368,8 +399,8 @@ const toggleSidebar = () => {
 const handleSendMessage = async (content) => {
   if (!content.trim()) return
   
-  // 发送消息
-  await chatStore.sendMessage(content)
+  // 使用流式接口发送消息
+  await chatStore.sendMessageWithStream(content)
   
   // 滚动到底部
   scrollToBottom()
@@ -484,6 +515,13 @@ onMounted(() => {
 // 监听消息变化，自动滚动到底部
 watch(
   () => messages.value.length,
+  () => {
+    scrollToBottom()
+  }
+)
+
+watch(
+  () => streamingContent.value,
   () => {
     scrollToBottom()
   }
@@ -741,11 +779,19 @@ watch(isMobileMenuOpen, (isOpen) => {
   background: var(--bg-light);
 }
 
+.footer-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
 .user-info {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
 .user-avatar {
@@ -756,6 +802,7 @@ watch(isMobileMenuOpen, (isOpen) => {
 .user-detail {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .user-name {
@@ -767,6 +814,29 @@ watch(isMobileMenuOpen, (isOpen) => {
 .user-role {
   font-size: 12px;
   color: var(--success-color);
+}
+
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  color: var(--text-secondary) !important;
+  background: var(--bg-white) !important;
+  border: 1px solid var(--border-base) !important;
+  border-radius: var(--radius-base) !important;
+  padding: 8px 10px !important;
+}
+
+.theme-toggle-btn:hover {
+  color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  background: rgba(0, 212, 255, 0.08) !important;
+}
+
+.sidebar-collapsed .theme-toggle-btn {
+  width: 100%;
+  justify-content: center;
 }
 
 .logout-btn {
@@ -1073,6 +1143,10 @@ watch(isMobileMenuOpen, (isOpen) => {
   
   .feature-cards {
     grid-template-columns: 1fr;
+  }
+
+  .footer-top {
+    margin-bottom: 10px;
   }
   
   .welcome-section {

@@ -73,6 +73,12 @@ const chartRef = ref(null)
  */
 let chartInstance = null
 
+function getCssVar(name) {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim()
+}
+
 // ==================== 计算属性 ====================
 
 /**
@@ -125,6 +131,11 @@ function initChart() {
  */
 function updateChart() {
   if (!chartInstance) return
+
+  const tooltipBg = getCssVar('--tooltip-bg')
+  const tooltipBorder = getCssVar('--tooltip-border')
+  const tooltipText = getCssVar('--tooltip-text')
+  const labelColor = getCssVar('--chart-label-color')
   
   // 准备图表数据
   const chartData = [
@@ -140,11 +151,11 @@ function updateChart() {
     tooltip: {
       trigger: 'item',
       formatter: '{b}: {c} ({d}%)',
-      backgroundColor: 'rgba(13, 17, 23, 0.95)',
-      borderColor: '#30363D',
+      backgroundColor: tooltipBg,
+      borderColor: tooltipBorder,
       borderWidth: 1,
       textStyle: {
-        color: '#E6EDF3'
+        color: tooltipText
       }
     },
     
@@ -158,7 +169,7 @@ function updateChart() {
       itemGap: 16,
       textStyle: {
         fontSize: 12,
-        color: '#B0BAC5'
+        color: labelColor
       }
     },
     
@@ -177,7 +188,7 @@ function updateChart() {
           show: true,
           formatter: '{b}\n{c}',
           fontSize: 12,
-          color: '#B0BAC5'
+          color: labelColor
         },
         // 标签引导线
         labelLine: {
@@ -185,7 +196,7 @@ function updateChart() {
           length: 10,
           length2: 15,
           lineStyle: {
-            color: '#30363D'
+            color: tooltipBorder
           }
         },
         // 高亮状态
@@ -194,7 +205,7 @@ function updateChart() {
             show: true,
             fontSize: 14,
             fontWeight: 'bold',
-            color: '#E6EDF3'
+            color: tooltipText
           },
           itemStyle: {
             shadowBlur: 20,
@@ -220,6 +231,11 @@ function handleResize() {
   chartInstance?.resize()
 }
 
+function handleThemeChange() {
+  updateChart()
+  chartInstance?.resize()
+}
+
 // ==================== 生命周期 ====================
 
 onMounted(() => {
@@ -230,11 +246,13 @@ onMounted(() => {
   
   // 监听窗口大小变化
   window.addEventListener('resize', handleResize)
+  window.addEventListener('app-theme-change', handleThemeChange)
 })
 
 onUnmounted(() => {
   // 移除事件监听
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('app-theme-change', handleThemeChange)
   
   // 销毁图表实例
   chartInstance?.dispose()

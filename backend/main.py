@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-FastAPI 主入口模块
-
-应用程序的入口点，配置 FastAPI 应用实例和中间件。
-"""
 
 import uvicorn
 from contextlib import asynccontextmanager
@@ -12,38 +7,36 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
+from datetime import datetime, timezone
+from sqlalchemy import text
+
 from app.api.router import api_router
-from app.database import init_db, close_db
 from app.config import settings
-from app.services.cache_service import init_redis, close_redis, is_redis_available
+from app.database import init_db, close_db, check_db_connection
+from app.services.cache_service import init_redis, close_redis, is_redis_available, check_redis
 from app.middleware.rate_limiter import RateLimitMiddleware, init_rate_limiters
 from redis import asyncio as aioredis
-
-
-# ==================== 生命周期管理 ====================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     应用生命周期管理器
-    
+
     处理应用启动和关闭时的初始化和清理工作。
     """
-    # ===== 启动事件 =====
-    print("=" * 50)
-    print("🚀 AI 数字员工后端服务启动中...")
-    print("=" * 50)
-    
-    # 初始化数据库（开发环境，生产环境建议使用 Alembic 迁移）
+
+    print("AI 数字员工后端服务启动中...")
+
+    # 初始化数据库
     try:
         await init_db()
-        print("✅ 数据库连接初始化成功")
+        print("数据库连接初始化成功")
     except Exception as e:
-        print(f"❌ 数据库初始化失败: {e}")
-    
+        print(f"数据库初始化失败: {e}")
+
     # 初始化 Redis 缓存服务
     redis_connected = await init_redis()
-    
-    # 初始化 Redis 限流器（仅在 Redis 可用时）
+
+    # 初始化 Redis 限流器
     if redis_connected:
         try:
             # 创建一个新的 Redis 连接用于限流器
@@ -56,38 +49,33 @@ async def lifespan(app: FastAPI):
             )
             await init_rate_limiters(redis_client)
         except Exception as e:
-            print(f"⚠️ 限流器初始化失败，将使用内存限流: {e}")
+            print(f"限流器初始化失败，将使用内存限流: {e}")
     else:
-        print("⚠️ Redis 不可用，限流器将使用内存模式")
-    
-    print(f"📡 API 文档地址: http://localhost:8000/docs")
-    print(f"📡 ReDoc 文档地址: http://localhost:8000/redoc")
-    print("=" * 50)
-    
+        print("Redis 不可用，限流器将使用内存模式")
+
+    print(f"API 文档地址: http://localhost:8000/docs")
+    print(f"ReDoc 文档地址: http://localhost:8000/redoc")
+
     yield  # 应用运行中
-    
-    # ===== 关闭事件 =====
+
     print("\n" + "=" * 50)
-    print("🛑 服务关闭中，正在清理资源...")
-    
+    print("服务关闭中，正在清理资源...")
+
     # 关闭数据库连接池
     try:
         await close_db()
-        print("✅ 数据库连接已关闭")
+        print("数据库连接已关闭")
     except Exception as e:
-        print(f"⚠️ 数据库关闭异常: {e}")
-    
+        print(f"数据库关闭异常: {e}")
+
     # 关闭 Redis 连接
     try:
         await close_redis()
     except Exception as e:
-        print(f"⚠️ Redis 关闭异常: {e}")
-    
-    print("👋 服务已安全关闭")
-    print("=" * 50)
+        print(f"Redis 关闭异常: {e}")
 
+    print("服务已安全关闭")
 
-# ==================== 创建 FastAPI 应用实例 ====================
 app = FastAPI(
     title="AI 数字员工后端服务",
     description="""
@@ -95,24 +83,24 @@ app = FastAPI(
 
 提供以下功能：
 
-### 🔐 用户认证
+### 用户认证
 - 用户注册和登录
 - JWT Token 认证
 
-### ✅ 待办事项管理
+### 待办事项管理
 - 创建、查询、更新、删除待办事项
 - 支持状态和优先级筛选
 
-### 🏢 会议室预约
+### 会议室预约
 - 查询可用会议室
 - 创建和取消预约
 - 自动时间冲突检测
 
-### 🤖 AI 对话
+### AI 对话
 - 自然语言交互
 - 多智能体任务处理
 
-### 📊 数据统计
+### 数据统计
 - 待办事项统计
 - 会议室使用统计
     """,
@@ -123,32 +111,19 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-
-# ==================== 配置 CORS 中间件 ====================
-# 注意：生产环境应限制允许的源
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产环境应改为具体的前端域名
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
-# ==================== 配置限流中间件 ====================
-# 注意：限流中间件应在 CORS 之后添加
 app.add_middleware(RateLimitMiddleware)
 
-
-# ==================== 全局异常处理器 ====================
-
+# 异常处理机制
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    """
-    HTTP 异常处理器
-    
-    统一处理 HTTPException，返回标准化的错误响应格式。
-    """
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -163,12 +138,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """
-    请求验证异常处理器
-    
-    处理 Pydantic 验证失败的情况，返回详细的错误信息。
-    """
-    # 提取验证错误详情
     errors = []
     for error in exc.errors():
         field = " -> ".join(str(loc) for loc in error["loc"])
@@ -177,7 +146,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "message": error["msg"],
             "type": error["type"]
         })
-    
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
@@ -192,15 +161,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    """
-    通用异常处理器
-    
-    捕获所有未处理的异常，返回 500 错误。
-    生产环境中不应暴露具体错误信息。
-    """
-    # 记录错误日志（生产环境应使用日志系统）
     print(f"未处理的异常: {type(exc).__name__}: {str(exc)}")
-    
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
@@ -211,18 +173,13 @@ async def general_exception_handler(request: Request, exc: Exception):
         }
     )
 
-
-# ==================== 注册路由 ====================
 app.include_router(api_router)
-
-
-# ==================== 根路径健康检查 ====================
 
 @app.get("/", tags=["健康检查"])
 async def root():
     """
     根路径健康检查
-    
+
     用于检测服务是否正常运行。
     """
     return {
@@ -237,24 +194,43 @@ async def root():
 async def health_check():
     """
     健康检查接口
-    
+
     用于负载均衡器或监控系统检测服务状态。
     返回数据库和缓存的连接状态。
     """
-    return {
-        "status": "healthy",
-        "database": "connected",
-        "cache": "connected" if is_redis_available() else "disconnected"
-    }
+    #1. 检查数据库
+    db_healthy = await check_db_connection()
 
+    # 2. 检查 Redis
+    redis_healthy = await check_redis()
 
-# ==================== 应用入口 ====================
+    # 3. 综合判断
+    if db_healthy and redis_healthy:
+        status = "healthy"
+        http_status = 200
+    elif db_healthy:
+        status = "degraded"  # 数据库正常，Redis挂了
+        http_status = 200    # 主业务仍可用
+    else:
+        status = "unhealthy"  #数据库挂了，服务基本不可用
+        http_status = 503     # Service Unavailable
+
+    return JSONResponse(
+        status_code=http_status,
+        content={
+            "status": status,
+            "database": "connected" if db_healthy else "disconnected",
+            "cache": "connected" if redis_healthy else "disconnected",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    )
+
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=8000,
-        reload=True,  # 开发模式启用热重载
+        reload=True,
         workers=1,
         log_level="info"
     )

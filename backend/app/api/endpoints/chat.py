@@ -8,8 +8,6 @@
 
 import uuid
 import json
-import re
-import asyncio
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import StreamingResponse
@@ -27,9 +25,6 @@ logger = logging.getLogger(__name__)
 
 # 创建路由器
 router = APIRouter(prefix="/chat", tags=["AI 对话"])
-
-
-# ==================== 会话管理端点（固定路径优先） ====================
 
 @router.get(
     "/conversations",
@@ -112,8 +107,6 @@ async def delete_conversation(
     return {"success": True}
 
 
-# ==================== 对话端点 ====================
-
 @router.post(
     "/",
     response_model=ChatResponse,
@@ -138,7 +131,7 @@ async def chat(
     - 企业知识库问答
     
     - **message**: 用户发送的消息内容
-    - **conversation_id**: 会话 ID（可选，用于维持上下文）
+    - **conversation_id**: 会话 ID
     """
     # 检查限流
     await check_rate_limit(
@@ -148,7 +141,7 @@ async def chat(
     )
     
     try:
-        # 导入 router_agent（延迟导入避免循环依赖）
+        # 导入 router_agent
         from app.agents.router_agent import process_message
         
         user_id = str(current_user.id)
@@ -174,7 +167,7 @@ async def chat(
             conversation_id = str(conv.id)
             history_msgs = []
         
-        # 2. 构建历史消息（在保存当前用户消息之前，history_msgs 就是完整的历史）
+        # 2. 构建历史消息
         #    对于新会话，history_msgs 为空列表；对于已有会话，包含所有之前的消息
         history = [
             ChatMessage(role=msg.role, content=msg.content)
@@ -317,7 +310,7 @@ async def chat_stream(
             db, conversation_id, user_id, limit=50
         )
         
-        # 转换为 ChatMessage 格式（排除当前用户消息）
+        # 转换为 ChatMessage 格式
         history = [
             ChatMessage(role=msg.role, content=msg.content)
             for msg in history_msgs[:-1]
@@ -336,45 +329,51 @@ async def chat_stream(
         """
         SSE 事件生成器
         
-        将完整响应按句子/段落分块发送，模拟流式效果。
-        完成后保存 AI 回复到数据库。
+        直接消费后端 Agent 的真实流式输出。
+        完成后保存完整的 AI 回复到数据库。
         """
         try:
+            # 尽早发送 conversation_id，避免前端在长耗时处理中丢失会话定位
+            meta_data = json.dumps({"conversation_id": conversation_id}, ensure_ascii=False)
+            yield f"data: {meta_data}\n\n"
+
             # 延迟导入避免循环依赖
-            from app.agents.router_agent import process_message
-            
-            # 调用 Router Agent 处理用户消息
-            result = await process_message(
+            from app.agents.router_agent import stream_message
+
+            assistant_chunks = []
+
+            # 调用 Router Agent，直接透传真实流式文本
+            async for chunk in stream_message(
                 user_input=chat_request.message,
                 user_id=user_id,
                 db=db,
                 conversation_id=conversation_id,
                 history=history if history else None
-            )
-            
-            # 保存 AI 回复到数据库
-            await ConversationService.save_message(db, conversation_id, "assistant", result)
-            
-            # 发送 conversation_id 元数据
-            meta_data = json.dumps({"conversation_id": conversation_id}, ensure_ascii=False)
-            yield f"data: {meta_data}\n\n"
-            
-            # 将完整响应按标点符号分块发送，模拟流式效果
-            chunks = re.split(r'(?<=[\u3002\uff01\uff1f\n.!?])', result)
-            
-            for chunk in chunks:
-                if chunk.strip():
-                    data = json.dumps({"content": chunk}, ensure_ascii=False)
-                    yield f"data: {data}\n\n"
-                    # 短暂延迟模拟流式效果
-                    await asyncio.sleep(0.05)
-            
+            ):
+                if await request.is_disconnected():
+                    logger.info("客户端已断开流式连接: conversation_id=%s", conversation_id)
+                    break
+
+                assistant_chunks.append(chunk)
+                data = json.dumps({"content": chunk}, ensure_ascii=False)
+                yield f"data: {data}\n\n"
+
+            assistant_message = "".join(assistant_chunks)
+            if assistant_message.strip():
+                await ConversationService.save_message(db, conversation_id, "assistant", assistant_message)
+
             # 发送结束标记
             yield "data: [DONE]\n\n"
             
         except Exception as e:
             logger.error(f"流式对话处理失败: {str(e)}")
-            error_data = json.dumps({"error": f"处理失败: {str(e)}"}, ensure_ascii=False)
+            error_data = json.dumps(
+                {
+                    "conversation_id": conversation_id,
+                    "error": f"处理失败: {str(e)}"
+                },
+                ensure_ascii=False
+            )
             yield f"data: {error_data}\n\n"
             yield "data: [DONE]\n\n"
     
@@ -384,6 +383,6 @@ async def chat_stream(
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"  # 禁用 nginx 缓冲
+            "X-Accel-Buffering": "no"
         }
     )

@@ -59,6 +59,18 @@ export const useStatisticsStore = defineStore('statistics', () => {
    * 最后更新时间
    */
   const lastUpdated = ref(null)
+
+  function normalizeMeetingRoomStat(room) {
+    const totalHours = Number(
+      room?.total_hours ?? room?.total_duration_hours ?? 0
+    )
+
+    return {
+      ...room,
+      total_hours: totalHours,
+      total_duration_hours: totalHours
+    }
+  }
   
   // ==================== 计算属性 ====================
   
@@ -85,7 +97,10 @@ export const useStatisticsStore = defineStore('statistics', () => {
    * 会议室总使用时长
    */
   const totalMeetingHours = computed(() =>
-    meetingStats.value.reduce((sum, room) => sum + (room.total_hours || 0), 0)
+    meetingStats.value.reduce(
+      (sum, room) => sum + (room.total_hours || room.total_duration_hours || 0),
+      0
+    )
   )
   
   // ==================== 方法定义 ====================
@@ -95,9 +110,12 @@ export const useStatisticsStore = defineStore('statistics', () => {
    * 
    * @returns {Promise<Object>} 返回统计数据
    */
-  async function fetchTodoStats() {
+  async function fetchTodoStats(options = {}) {
+    const { updateLoading = true } = options
     try {
-      loading.value = true
+      if (updateLoading) {
+        loading.value = true
+      }
       const resp = await getTodoStats()
       // 后端返回 { status, data: { pending, in_progress, completed, cancelled, total } }
       const stats = resp.data || {}
@@ -114,7 +132,9 @@ export const useStatisticsStore = defineStore('statistics', () => {
       // 返回当前状态，不抛出错误
       return todoStats.value
     } finally {
-      loading.value = false
+      if (updateLoading) {
+        loading.value = false
+      }
     }
   }
   
@@ -123,20 +143,25 @@ export const useStatisticsStore = defineStore('statistics', () => {
    * 
    * @returns {Promise<Array>} 返回统计数据数组
    */
-  async function fetchMeetingStats() {
+  async function fetchMeetingStats(options = {}) {
+    const { updateLoading = true } = options
     try {
-      loading.value = true
+      if (updateLoading) {
+        loading.value = true
+      }
       const resp = await getMeetingStats()
       // 后端返回 { status, data: { rooms: [...], total_reservations, total_duration_hours } }
       const stats = resp.data || {}
-      meetingStats.value = stats.rooms || []
+      meetingStats.value = (stats.rooms || []).map(normalizeMeetingRoomStat)
       return meetingStats.value
     } catch (error) {
       console.error('获取会议室统计失败:', error)
       // 返回当前状态，不抛出错误
       return meetingStats.value
     } finally {
-      loading.value = false
+      if (updateLoading) {
+        loading.value = false
+      }
     }
   }
   
@@ -151,8 +176,8 @@ export const useStatisticsStore = defineStore('statistics', () => {
     try {
       // 并行获取所有统计数据
       await Promise.all([
-        fetchTodoStats(),
-        fetchMeetingStats()
+        fetchTodoStats({ updateLoading: false }),
+        fetchMeetingStats({ updateLoading: false })
       ])
       
       // 更新最后获取时间

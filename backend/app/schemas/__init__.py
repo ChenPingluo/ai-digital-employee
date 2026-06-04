@@ -9,6 +9,7 @@ from app.schemas.user import UserCreate, UserLogin, UserResponse, Token
 from app.schemas.todo import TodoCreate, TodoUpdate, TodoResponse
 from app.schemas.meeting import MeetingRoomResponse, ReservationCreate, ReservationResponse
 from app.schemas.chat import ChatRequest, ChatResponse
+from app.schemas.notification import ReminderResponse, ReminderListResponse
 
 __all__ = [
     # 用户相关
@@ -26,5 +27,8 @@ __all__ = [
     "ReservationResponse",
     # 聊天相关
     "ChatRequest",
-    "ChatResponse"
+    "ChatResponse",
+    # 提醒相关
+    "ReminderResponse",
+    "ReminderListResponse"
 ]

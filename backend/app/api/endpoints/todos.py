@@ -98,10 +98,10 @@ async def create_todo(
     """
     创建待办事项接口
     
-    - **title**: 任务标题（必填）
-    - **description**: 任务描述（可选）
-    - **priority**: 优先级 0-3（默认0）
-    - **due_date**: 截止日期（可选）
+    - **title**: 任务标题
+    - **description**: 任务描述
+    - **priority**: 优先级 0-3
+    - **due_date**: 截止日期
     """
     try:
         todo = await todo_service.create_todo(

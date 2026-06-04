@@ -26,7 +26,18 @@ class QueryKnowledgeBaseInput(BaseModel):
 
 # ==================== 工具函数 ====================
 
-def query_knowledge_base(question: str) -> str:
+def _format_knowledge_result(question: str, answer: str) -> str:
+    """将 FastGPT 返回值统一格式化为工具输出。"""
+    if answer.startswith("知识库"):
+        return f"❌ {answer}"
+
+    result = f"📚 知识库查询结果\n\n"
+    result += f"❓ 问题：{question}\n\n"
+    result += f"💡 回答：\n{answer}"
+    return result
+
+
+async def query_knowledge_base_async(question: str) -> str:
     """
     查询企业知识库
     
@@ -39,32 +50,22 @@ def query_knowledge_base(question: str) -> str:
         str: 知识库的回答
     """
     try:
-        async def _query():
-            return await fastgpt_service.query_fastgpt(question)
-        
-        # 执行异步函数
-        try:
-            loop = asyncio.get_running_loop()
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, _query())
-                answer = future.result()
-        except RuntimeError:
-            answer = asyncio.run(_query())
-        
-        # 检查是否为错误响应
-        if answer.startswith("知识库"):
-            return f"❌ {answer}"
-        
-        # 格式化输出
-        result = f"📚 知识库查询结果\n\n"
-        result += f"❓ 问题：{question}\n\n"
-        result += f"💡 回答：\n{answer}"
-        
-        return result
-        
+        answer = await fastgpt_service.query_fastgpt(question)
+        return _format_knowledge_result(question, answer)
     except Exception as e:
         return f"❌ 知识库查询异常：{str(e)}"
+
+
+def query_knowledge_base(question: str) -> str:
+    """同步包装器，兼容 LangChain 的同步调用路径。"""
+    try:
+        return asyncio.run(query_knowledge_base_async(question))
+    except RuntimeError:
+        import concurrent.futures
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(asyncio.run, query_knowledge_base_async(question))
+            return future.result()
 
 
 def get_fastgpt_tools() -> List[BaseTool]:
@@ -77,6 +78,7 @@ def get_fastgpt_tools() -> List[BaseTool]:
     tools = [
         StructuredTool.from_function(
             func=query_knowledge_base,
+            coroutine=query_knowledge_base_async,
             name="query_knowledge_base",
             description="查询企业知识库，获取公司规章制度、流程说明、产品信息等企业内部知识。适用于询问报销流程、年假政策、公司制度等问题。",
             args_schema=QueryKnowledgeBaseInput

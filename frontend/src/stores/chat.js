@@ -11,11 +11,13 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
   sendMessage as sendMessageApi,
+  sendMessageStream as sendMessageStreamApi,
   getConversations as getConversationsApi,
   getConversationMessages as getConversationMessagesApi,
   createConversation as createConversationApi,
   deleteConversation as deleteConversationApi
 } from '@/api/chat'
+import { useStatisticsStore } from '@/stores/statistics'
 import { ElMessage } from 'element-plus'
 
 // ==================== 定义 Store ====================
@@ -73,6 +75,17 @@ export const useChatStore = defineStore('chat', () => {
   function getCurrentTimestamp() {
     return new Date().toISOString()
   }
+
+  /**
+   * 聊天中的工具调用可能会变更待办/会议数据。
+   * 异步刷新统计，避免用户切换到看板时看到旧的 Pinia 快照。
+   */
+  function refreshDashboardStats() {
+    const statisticsStore = useStatisticsStore()
+    statisticsStore.fetchAllStats().catch((error) => {
+      console.error('刷新看板统计失败:', error)
+    })
+  }
   
   // ==================== 方法定义 ====================
   
@@ -125,6 +138,7 @@ export const useChatStore = defineStore('chat', () => {
       
       // 刷新会话列表（可能新建了会话或标题有变化）
       loadConversations()
+      refreshDashboardStats()
       
     } catch (error) {
       console.error('发送消息失败:', error)
@@ -190,16 +204,25 @@ export const useChatStore = defineStore('chat', () => {
     }
     
     messages.value.push(assistantMessage)
+    let streamError = ''
     
     try {
-      // 导入流式 API
-      const { sendMessageStream } = await import('@/api/chat')
-      
       // 调用流式 API（传递当前会话 ID）
-      await sendMessageStream(content.trim(), (chunk) => {
+      await sendMessageStreamApi(content.trim(), (chunk) => {
         // 从响应中提取并更新 conversation_id
         if (chunk.conversation_id) {
           currentConversationId.value = chunk.conversation_id
+        }
+
+        if (chunk.error) {
+          streamError = chunk.error
+          const msgIndex = messages.value.findIndex(m => m.id === assistantMessageId)
+          if (msgIndex !== -1) {
+            messages.value[msgIndex].content = chunk.error
+            messages.value[msgIndex].isError = true
+            messages.value[msgIndex].isStreaming = false
+          }
+          return
         }
         
         // 更新流式内容
@@ -220,7 +243,12 @@ export const useChatStore = defineStore('chat', () => {
       }
       
       // 刷新会话列表（可能新建了会话或标题有变化）
-      loadConversations()
+      await loadConversations()
+      refreshDashboardStats()
+
+      if (streamError) {
+        ElMessage.error(streamError)
+      }
       
     } catch (error) {
       console.error('发送消息失败:', error)

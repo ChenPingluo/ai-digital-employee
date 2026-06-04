@@ -57,15 +57,13 @@ class Reservation(Base):
         # SQLAlchemy 不直接支持 EXCLUDE 约束的声明式定义
     )
     
-    # ==================== 主键字段 ====================
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
         comment="预约唯一标识符"
     )
-    
-    # ==================== 外键字段 ====================
+
     # 关联会议室表
     room_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -81,8 +79,7 @@ class Reservation(Base):
         nullable=False,
         comment="预约人用户ID"
     )
-    
-    # ==================== 会议信息字段 ====================
+
     # 会议标题
     title: Mapped[str] = mapped_column(
         String(200),
@@ -104,8 +101,7 @@ class Reservation(Base):
         comment="会议结束时间"
     )
     
-    # ==================== 状态字段 ====================
-    # 预约状态：confirmed（已确认）, cancelled（已取消）, completed（已完成）
+    # 预约状态：confirmed, cancelled, completed
     status: Mapped[str] = mapped_column(
         String(20),
         default="confirmed",
@@ -113,7 +109,6 @@ class Reservation(Base):
         comment="预约状态：confirmed/cancelled/completed"
     )
     
-    # ==================== 时间戳字段 ====================
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -127,7 +122,6 @@ class Reservation(Base):
         comment="预约最后更新时间"
     )
     
-    # ==================== 关系定义 ====================
     # 与会议室的多对一关系
     room: Mapped["MeetingRoom"] = relationship(
         "MeetingRoom",

@@ -52,16 +52,14 @@ class Todo(Base):
             name="chk_todo_priority"
         ),
     )
-    
-    # ==================== 主键字段 ====================
+
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
         comment="任务唯一标识符"
     )
-    
-    # ==================== 外键字段 ====================
+
     # 关联用户表，级联删除
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -69,8 +67,7 @@ class Todo(Base):
         nullable=False,
         comment="任务所属用户ID"
     )
-    
-    # ==================== 任务内容字段 ====================
+
     # 任务标题：非空，最大200字符
     title: Mapped[str] = mapped_column(
         String(200),
@@ -84,8 +81,7 @@ class Todo(Base):
         nullable=True,
         comment="任务详细描述"
     )
-    
-    # ==================== 任务属性字段 ====================
+
     # 优先级：0-低，1-中，2-高，3-紧急
     priority: Mapped[int] = mapped_column(
         SmallInteger,
@@ -107,8 +103,7 @@ class Todo(Base):
         index=True,
         comment="任务截止日期"
     )
-    
-    # ==================== 时间戳字段 ====================
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -121,8 +116,7 @@ class Todo(Base):
         onupdate=func.now(),
         comment="任务最后更新时间"
     )
-    
-    # ==================== 关系定义 ====================
+
     # 与用户的多对一关系
     user: Mapped["User"] = relationship(
         "User",

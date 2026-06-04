@@ -10,11 +10,13 @@ from app.api.endpoints import todos
 from app.api.endpoints import meetings
 from app.api.endpoints import chat
 from app.api.endpoints import statistics
+from app.api.endpoints import notifications
 
 __all__ = [
     "auth",
     "todos",
     "meetings",
     "chat",
-    "statistics"
+    "statistics",
+    "notifications"
 ]

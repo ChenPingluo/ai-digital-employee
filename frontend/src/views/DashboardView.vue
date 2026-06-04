@@ -34,6 +34,12 @@
           >
             刷新
           </el-button>
+          <el-button
+            :icon="isDarkTheme ? Sunny : Moon"
+            @click="themeStore.toggleTheme()"
+          >
+            {{ isDarkTheme ? '浅色界面' : '深色界面' }}
+          </el-button>
         </div>
       </div>
     </header>
@@ -52,7 +58,13 @@
             <span class="stat-label">待办总数</span>
           </div>
           <div class="stat-trend">
-            <el-tag type="info" size="small" effect="plain">
+            <el-tag
+              class="stat-action-tag"
+              type="info"
+              size="small"
+              effect="plain"
+              @click="openTodoDialog"
+            >
               全部任务
             </el-tag>
           </div>
@@ -221,6 +233,58 @@
         </el-row>
       </div>
     </main>
+
+    <el-dialog
+      v-model="isTodoDialogVisible"
+      title="全部任务"
+      width="760px"
+      class="todo-dialog"
+    >
+      <div class="todo-dialog-toolbar">
+        <span class="todo-dialog-summary">共 {{ todoDialogTotal }} 条任务</span>
+      </div>
+
+      <el-table
+        v-loading="isTodoDialogLoading"
+        :data="allTodos"
+        stripe
+        empty-text="暂无任务"
+      >
+        <el-table-column prop="title" label="任务" min-width="240" />
+        <el-table-column label="状态" width="110">
+          <template #default="{ row }">
+            <el-tag
+              :type="getStatusType(row.status)"
+              size="small"
+              effect="plain"
+            >
+              {{ getStatusLabel(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="优先级" width="100">
+          <template #default="{ row }">
+            {{ getPriorityLabel(row.priority) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="截止时间" min-width="180">
+          <template #default="{ row }">
+            {{ formatTodoDate(row.due_date) }}
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <div class="todo-dialog-pagination">
+        <el-pagination
+          background
+          layout="prev, pager, next"
+          :current-page="todoDialogPage"
+          :page-size="TODO_DIALOG_PAGE_SIZE"
+          :total="todoDialogTotal"
+          @current-change="handleTodoDialogPageChange"
+        />
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -231,7 +295,7 @@
  * 展示统计数据和图表
  */
 
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import {
   ChatDotRound,
   Refresh,
@@ -239,6 +303,8 @@ import {
   CircleCheck,
   Timer,
   Calendar,
+  Moon,
+  Sunny,
   ArrowRight,
   OfficeBuilding
 } from '@element-plus/icons-vue'
@@ -249,10 +315,13 @@ import MeetingChart from '@/components/MeetingChart.vue'
 
 // 导入 Store
 import { useStatisticsStore } from '@/stores/statistics'
+import { useThemeStore } from '@/stores/theme'
+import { getTodos } from '@/api/todo'
 
 // ==================== Store ====================
 
 const statisticsStore = useStatisticsStore()
+const themeStore = useThemeStore()
 
 // ==================== 响应式数据 ====================
 
@@ -280,6 +349,7 @@ const totalReservations = computed(() => statisticsStore.totalReservations)
  * 总会议时长
  */
 const totalMeetingHours = computed(() => statisticsStore.totalMeetingHours)
+const isDarkTheme = computed(() => themeStore.isDark)
 
 /**
  * 完成率
@@ -304,15 +374,17 @@ const currentDateStr = computed(() => {
   return now.toLocaleDateString('zh-CN', options)
 })
 
-/**
- * 模拟的最近待办数据
- */
-const recentTodos = ref([
-  { id: 1, title: '完成项目周报', status: 'in_progress' },
-  { id: 2, title: '准备会议材料', status: 'pending' },
-  { id: 3, title: '代码审查', status: 'completed' },
-  { id: 4, title: '更新文档', status: 'pending' }
-])
+const recentTodos = ref([])
+const allTodos = ref([])
+const isTodoDialogVisible = ref(false)
+const isTodoDialogLoading = ref(false)
+const todoDialogPage = ref(1)
+const todoDialogTotal = ref(0)
+let hasCompletedInitialRefresh = false
+let isRefreshingDashboard = false
+
+const DASHBOARD_TODO_LIMIT = 6
+const TODO_DIALOG_PAGE_SIZE = 10
 
 // ==================== 方法 ====================
 
@@ -320,7 +392,81 @@ const recentTodos = ref([
  * 刷新数据
  */
 const refreshData = async () => {
-  await statisticsStore.fetchAllStats()
+  isRefreshingDashboard = true
+  try {
+    await Promise.all([
+      statisticsStore.fetchAllStats(),
+      fetchRecentTodos()
+    ])
+  } finally {
+    isRefreshingDashboard = false
+  }
+}
+
+function sortTodosForDashboard(a, b) {
+  if (a.due_date && b.due_date) {
+    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+  }
+
+  if (a.due_date) {
+    return -1
+  }
+
+  if (b.due_date) {
+    return 1
+  }
+
+  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+}
+
+async function fetchRecentTodos() {
+  try {
+    const [pendingResp, progressResp] = await Promise.all([
+      getTodos({ status: 'pending', page_size: DASHBOARD_TODO_LIMIT }),
+      getTodos({ status: 'in_progress', page_size: DASHBOARD_TODO_LIMIT })
+    ])
+
+    const activeTodos = [
+      ...(pendingResp.items || []),
+      ...(progressResp.items || [])
+    ]
+
+    recentTodos.value = activeTodos
+      .sort(sortTodosForDashboard)
+      .slice(0, DASHBOARD_TODO_LIMIT)
+  } catch (error) {
+    console.error('获取看板待办列表失败:', error)
+    recentTodos.value = []
+  }
+}
+
+async function fetchAllTodos(page = 1) {
+  try {
+    isTodoDialogLoading.value = true
+    const response = await getTodos({
+      page,
+      page_size: TODO_DIALOG_PAGE_SIZE
+    })
+
+    allTodos.value = response.items || []
+    todoDialogTotal.value = response.total || 0
+    todoDialogPage.value = response.page || page
+  } catch (error) {
+    console.error('获取全部任务失败:', error)
+    allTodos.value = []
+    todoDialogTotal.value = 0
+  } finally {
+    isTodoDialogLoading.value = false
+  }
+}
+
+async function openTodoDialog() {
+  isTodoDialogVisible.value = true
+  await fetchAllTodos(1)
+}
+
+async function handleTodoDialogPageChange(page) {
+  await fetchAllTodos(page)
 }
 
 /**
@@ -351,6 +497,32 @@ const getStatusLabel = (status) => {
   return map[status] || status
 }
 
+const getPriorityLabel = (priority) => {
+  const map = {
+    0: '低',
+    1: '中',
+    2: '高',
+    3: '紧急'
+  }
+  return map[priority] || '未知'
+}
+
+const formatTodoDate = (value) => {
+  if (!value) return '未设置'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return '未设置'
+  }
+
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}`
+}
+
 /**
  * 获取进度条颜色
  * @param {number} count - 预约次数
@@ -365,8 +537,18 @@ const getProgressColor = (count) => {
 
 onMounted(() => {
   // 加载统计数据
-  refreshData()
+  refreshData().finally(() => {
+    hasCompletedInitialRefresh = true
+  })
 })
+
+watch(
+  () => statisticsStore.lastUpdated,
+  () => {
+    if (!hasCompletedInitialRefresh || isRefreshingDashboard) return
+    fetchRecentTodos()
+  }
+)
 </script>
 
 <style scoped>
@@ -579,6 +761,10 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
+.stat-action-tag {
+  cursor: pointer;
+}
+
 /* ==================== 图表区域 ==================== */
 
 .charts-section {
@@ -732,6 +918,23 @@ onMounted(() => {
 .room-count {
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.todo-dialog-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.todo-dialog-summary {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.todo-dialog-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
 }
 
 /* el-progress 深色适配 */

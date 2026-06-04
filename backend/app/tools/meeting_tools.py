@@ -10,7 +10,7 @@
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from langchain.tools import StructuredTool
@@ -18,6 +18,7 @@ from langchain_core.tools import BaseTool
 from langchain_core.pydantic_v1 import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.datetime_utils import parse_user_datetime, to_beijing_time
 from app.services import meeting_service
 from app.schemas.meeting import ReservationCreate
 
@@ -126,8 +127,8 @@ def get_meeting_tools(user_id: str, db_session: AsyncSession) -> List[BaseTool]:
         try:
             # 解析时间
             try:
-                parsed_start = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
-                parsed_end = datetime.fromisoformat(end_time.replace("Z", "+00:00"))
+                parsed_start = parse_user_datetime(start_time)
+                parsed_end = parse_user_datetime(end_time)
             except ValueError as e:
                 return f"❌ 时间格式错误：{str(e)}，请使用 ISO 格式如 '2024-12-31T10:00:00'"
             
@@ -135,7 +136,7 @@ def get_meeting_tools(user_id: str, db_session: AsyncSession) -> List[BaseTool]:
             if parsed_end <= parsed_start:
                 return "❌ 结束时间必须晚于开始时间"
             
-            if parsed_start < datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None):
+            if parsed_start < datetime.now(timezone.utc):
                 return "❌ 开始时间不能早于当前时间"
             
             # 构建预约数据
@@ -158,11 +159,13 @@ def get_meeting_tools(user_id: str, db_session: AsyncSession) -> List[BaseTool]:
             hours = int(duration // 60)
             minutes = int(duration % 60)
             duration_str = f"{hours}小时{minutes}分钟" if hours > 0 else f"{minutes}分钟"
-            
+            display_start = to_beijing_time(parsed_start)
+            display_end = to_beijing_time(parsed_end)
+
             result = f"✅ 会议预约成功！\n\n"
             result += f"📋 会议主题：{title}\n"
-            result += f"🕐 开始时间：{parsed_start.strftime('%Y-%m-%d %H:%M')}\n"
-            result += f"🕑 结束时间：{parsed_end.strftime('%Y-%m-%d %H:%M')}\n"
+            result += f"🕐 开始时间：{display_start.strftime('%Y-%m-%d %H:%M')}\n"
+            result += f"🕑 结束时间：{display_end.strftime('%Y-%m-%d %H:%M')}\n"
             result += f"⏱️ 会议时长：{duration_str}\n"
             result += f"🔖 预约ID：{reservation.id}"
             
@@ -219,9 +222,11 @@ def get_meeting_tools(user_id: str, db_session: AsyncSession) -> List[BaseTool]:
                 hours = int(duration // 60)
                 minutes = int(duration % 60)
                 duration_str = f"{hours}小时{minutes}分钟" if hours > 0 else f"{minutes}分钟"
-                
+                display_start = to_beijing_time(reservation.start_time)
+                display_end = to_beijing_time(reservation.end_time)
+
                 result += f"{icon} {reservation.title}\n"
-                result += f"   时间：{reservation.start_time.strftime('%Y-%m-%d %H:%M')} - {reservation.end_time.strftime('%H:%M')}\n"
+                result += f"   时间：{display_start.strftime('%Y-%m-%d %H:%M')} - {display_end.strftime('%H:%M')}\n"
                 result += f"   时长：{duration_str}\n"
                 result += f"   状态：{status_label}\n"
                 if reservation.room:

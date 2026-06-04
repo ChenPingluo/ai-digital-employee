@@ -432,7 +432,7 @@ const resetRegisterForm = () => {
   padding: 20px;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #0A0E14 0%, #0D1520 50%, #0A0E14 100%);
+  background: var(--login-bg-gradient);
 }
 
 /* 网格线叠加效果 */
@@ -511,10 +511,10 @@ const resetRegisterForm = () => {
   max-width: 420px;
   border-radius: var(--radius-large);
   z-index: 1;
-  background: rgba(13, 17, 23, 0.8) !important;
+  background: var(--login-card-bg) !important;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 212, 255, 0.15) !important;
+  border: 1px solid var(--login-card-border) !important;
   box-shadow: var(--shadow-base);
   transition: border-color var(--transition-base);
 }

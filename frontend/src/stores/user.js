@@ -97,6 +97,14 @@ export const useUserStore = defineStore('user', () => {
       loading.value = false
     }
   }
+
+  function clearAuthState() {
+    token.value = ''
+    userInfo.value = null
+
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('user_info')
+  }
   
   /**
    * 用户登出
@@ -104,19 +112,26 @@ export const useUserStore = defineStore('user', () => {
    * 清除所有认证状态并跳转到登录页
    */
   function logout() {
-    // 清除状态
-    token.value = ''
-    userInfo.value = null
-    
-    // 清除本地存储
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('user_info')
+    clearAuthState()
     
     // 提示信息
     ElMessage.success('已退出登录')
     
     // 跳转到登录页
     router.push({ name: 'Login' })
+  }
+
+  /**
+   * 处理认证过期
+   *
+   * 清理登录状态并跳回登录页，同时保留当前页面用于登录后返回。
+   */
+  function handleAuthExpired() {
+    clearAuthState()
+    router.push({
+      name: 'Login',
+      query: { redirect: router.currentRoute.value.fullPath }
+    })
   }
   
   /**
@@ -185,6 +200,8 @@ export const useUserStore = defineStore('user', () => {
     // 方法
     login,
     logout,
+    clearAuthState,
+    handleAuthExpired,
     fetchUserInfo,
     initializeAuth
   }

@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Optional, List
 
 from pydantic import BaseModel, Field, ConfigDict, field_validator
+from app.datetime_utils import normalize_user_datetime
 
 
 class TodoCreate(BaseModel):
@@ -56,6 +57,14 @@ class TodoCreate(BaseModel):
         if v < 0 or v > 3:
             raise ValueError("优先级必须在 0-3 之间")
         return v
+
+    @field_validator("due_date")
+    @classmethod
+    def normalize_due_date(cls, v: Optional[datetime]) -> Optional[datetime]:
+        """将无时区时间按北京时间解释后统一转换为 UTC。"""
+        if v is None:
+            return None
+        return normalize_user_datetime(v)
 
 
 class TodoUpdate(BaseModel):
@@ -114,6 +123,14 @@ class TodoUpdate(BaseModel):
         if v is not None and (v < 0 or v > 3):
             raise ValueError("优先级必须在 0-3 之间")
         return v
+
+    @field_validator("due_date")
+    @classmethod
+    def normalize_due_date(cls, v: Optional[datetime]) -> Optional[datetime]:
+        """将无时区时间按北京时间解释后统一转换为 UTC。"""
+        if v is None:
+            return None
+        return normalize_user_datetime(v)
 
 
 class TodoResponse(BaseModel):

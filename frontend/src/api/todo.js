@@ -15,7 +15,7 @@ import request from './request'
 /**
  * 获取待办事项列表
  * 
- * @param {string} [status] - 筛选状态（可选）
+ * @param {string|Object} [options] - 筛选条件或状态值（可选）
  *   - 'pending': 待处理
  *   - 'in_progress': 进行中
  *   - 'completed': 已完成
@@ -29,15 +29,19 @@ import request from './request'
  * 
  * // 获取进行中的待办
  * const inProgressTodos = await getTodos('in_progress')
+ *
+ * // 获取指定分页的待办
+ * const firstPageTodos = await getTodos({ status: 'pending', page_size: 5 })
  */
-export function getTodos(status) {
+export function getTodos(options) {
+  const params = typeof options === 'string'
+    ? { status: options }
+    : { ...(options || {}) }
+
   return request({
     url: '/todos',
     method: 'GET',
-    params: {
-      // 只有当 status 有值时才添加到查询参数
-      ...(status ? { status } : {})
-    }
+    params
   })
 }
 

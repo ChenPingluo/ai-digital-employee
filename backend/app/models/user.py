@@ -45,8 +45,7 @@ class User(Base):
     
     # 表名
     __tablename__ = "users"
-    
-    # ==================== 主键字段 ====================
+
     # 使用 UUID 作为主键，自动生成
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -55,7 +54,6 @@ class User(Base):
         comment="用户唯一标识符"
     )
     
-    # ==================== 认证字段 ====================
     # 用户名：唯一、非空，最大50字符
     username: Mapped[str] = mapped_column(
         String(50),
@@ -81,7 +79,6 @@ class User(Base):
         comment="bcrypt加密的用户密码"
     )
     
-    # ==================== 组织字段 ====================
     # 部门：可选，最大100字符
     department: Mapped[Optional[str]] = mapped_column(
         String(100),
@@ -97,7 +94,6 @@ class User(Base):
         comment="用户角色：user/admin/manager"
     )
     
-    # ==================== 状态字段 ====================
     # 账户激活状态
     is_active: Mapped[bool] = mapped_column(
         Boolean,
@@ -105,7 +101,6 @@ class User(Base):
         comment="账户是否激活"
     )
     
-    # ==================== 时间戳字段 ====================
     # 创建时间：自动设置为当前时间
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -121,7 +116,6 @@ class User(Base):
         comment="账户最后更新时间"
     )
     
-    # ==================== 关系定义 ====================
     # 与待办事项的一对多关系
     # back_populates 建立双向关系
     # cascade 设置级联删除

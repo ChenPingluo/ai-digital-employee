@@ -32,14 +32,45 @@
  */
 
 // 导入 Vue 组合式 API
-import { onMounted } from 'vue'
+import { computed, onBeforeMount, onMounted, onUnmounted, watch } from 'vue'
+import { useThemeStore } from '@/stores/theme'
+import { useUserStore } from '@/stores/user'
+import { useNotificationStore } from '@/stores/notification'
+
+const themeStore = useThemeStore()
+const userStore = useUserStore()
+const notificationStore = useNotificationStore()
+
+const isLoggedIn = computed(() => userStore.isLoggedIn)
 
 // ==================== 生命周期钩子 ====================
+
+onBeforeMount(() => {
+  themeStore.initializeTheme()
+  userStore.initializeAuth()
+})
 
 onMounted(() => {
   // 应用挂载完成
   console.log('AI 数字员工系统已启动')
 })
+
+onUnmounted(() => {
+  notificationStore.disconnect()
+})
+
+watch(
+  isLoggedIn,
+  (loggedIn) => {
+    if (loggedIn) {
+      notificationStore.connect()
+      return
+    }
+
+    notificationStore.disconnect()
+  },
+  { immediate: true }
+)
 </script>
 
 <style>

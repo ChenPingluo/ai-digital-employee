@@ -46,7 +46,7 @@
         <!-- 渲染消息内容（支持简单 Markdown） -->
         <div 
           class="message-content"
-          v-html="renderContent(message.content)"
+          v-html="renderedContent"
         ></div>
         
         <!-- 流式加载指示器 -->
@@ -72,7 +72,9 @@
  * 展示单条聊天消息，支持用户和 AI 两种角色的不同样式
  */
 
+import { computed } from 'vue'
 import { Monitor, User } from '@element-plus/icons-vue'
+import { renderMarkdown } from '@/utils/markdown'
 
 // ==================== Props 定义 ====================
 
@@ -86,7 +88,7 @@ import { Monitor, User } from '@element-plus/icons-vue'
  *   - isError: 是否为错误消息（可选）
  *   - isStreaming: 是否正在流式生成（可选）
  */
-defineProps({
+const props = defineProps({
   message: {
     type: Object,
     required: true,
@@ -95,6 +97,8 @@ defineProps({
     }
   }
 })
+
+const renderedContent = computed(() => renderMarkdown(props.message.content || ''))
 
 // ==================== 方法定义 ====================
 
@@ -130,57 +134,6 @@ function formatTime(timestamp) {
   }
 }
 
-/**
- * 渲染消息内容
- * 实现简单的 Markdown 解析：
- * - 将换行符转换为 <br>
- * - 将 `code` 转换为 <code> 标签
- * - 将 **bold** 转换为 <strong> 标签
- * - 转义 HTML 特殊字符防止 XSS
- * 
- * @param {string} content - 原始消息内容
- * @returns {string} 渲染后的 HTML 字符串
- */
-function renderContent(content) {
-  if (!content) return ''
-  
-  // 首先转义 HTML 特殊字符，防止 XSS 攻击
-  let html = content
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-  
-  // 处理代码块（```code```）
-  html = html.replace(
-    /```([\s\S]*?)```/g, 
-    '<pre class="code-block"><code>$1</code></pre>'
-  )
-  
-  // 处理行内代码（`code`）
-  html = html.replace(
-    /`([^`]+)`/g, 
-    '<code class="inline-code">$1</code>'
-  )
-  
-  // 处理粗体（**text**）
-  html = html.replace(
-    /\*\*([^*]+)\*\*/g, 
-    '<strong>$1</strong>'
-  )
-  
-  // 处理斜体（*text*）
-  html = html.replace(
-    /\*([^*]+)\*/g, 
-    '<em>$1</em>'
-  )
-  
-  // 将换行符转换为 <br>
-  html = html.replace(/\n/g, '<br>')
-  
-  return html
-}
 </script>
 
 <style scoped>
@@ -274,10 +227,38 @@ function renderContent(content) {
   font-size: 14px;
 }
 
+.message-content :deep(h1),
+.message-content :deep(h2),
+.message-content :deep(h3),
+.message-content :deep(h4),
+.message-content :deep(h5),
+.message-content :deep(h6) {
+  color: var(--text-primary);
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 12px 0 8px;
+}
+
+.message-content :deep(h1) {
+  font-size: 22px;
+}
+
+.message-content :deep(h2) {
+  font-size: 20px;
+}
+
+.message-content :deep(h3) {
+  font-size: 18px;
+}
+
+.message-content :deep(p) {
+  margin: 6px 0;
+}
+
 /* 代码块样式 */
 .message-content :deep(.code-block) {
-  background-color: #0D1117;
-  color: #d4d4d4;
+  background-color: var(--code-bg);
+  color: var(--code-text);
   padding: 12px;
   border-radius: var(--radius-base);
   border: 1px solid var(--border-base);
@@ -287,6 +268,17 @@ function renderContent(content) {
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.5;
+}
+
+.message-content :deep(.code-block-language) {
+  margin: -12px -12px 10px -12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-base);
+  background: rgba(0, 212, 255, 0.06);
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 /* 行内代码样式 */
@@ -325,11 +317,23 @@ function renderContent(content) {
   color: var(--text-regular);
 }
 
+.message-content :deep(hr) {
+  border: none;
+  border-top: 1px solid var(--border-base);
+  margin: 12px 0;
+}
+
 /* Markdown 表格 */
 .message-content :deep(table) {
   border-collapse: collapse;
   margin: 8px 0;
   width: 100%;
+}
+
+.message-content :deep(.markdown-table-wrapper) {
+  width: 100%;
+  overflow-x: auto;
+  margin: 8px 0;
 }
 
 .message-content :deep(th),
@@ -349,6 +353,19 @@ function renderContent(content) {
 .message-content :deep(ul),
 .message-content :deep(ol) {
   padding-left: 20px;
+  margin: 8px 0;
+  list-style-position: outside;
+}
+
+.message-content :deep(ul) {
+  list-style-type: disc;
+}
+
+.message-content :deep(ol) {
+  list-style-type: decimal;
+}
+
+.message-content :deep(li) {
   margin: 4px 0;
 }
 
@@ -360,6 +377,17 @@ function renderContent(content) {
 .message-content :deep(strong) {
   color: var(--text-primary);
   font-weight: 600;
+}
+
+.user-message .message-content :deep(h1),
+.user-message .message-content :deep(h2),
+.user-message .message-content :deep(h3),
+.user-message .message-content :deep(h4),
+.user-message .message-content :deep(h5),
+.user-message .message-content :deep(h6),
+.user-message .message-content :deep(strong),
+.user-message .message-content :deep(a) {
+  color: #FFFFFF;
 }
 
 /* ==================== 时间戳 ==================== */

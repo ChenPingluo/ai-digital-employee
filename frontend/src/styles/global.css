@@ -7,6 +7,8 @@
 /* ==================== CSS 变量定义 ==================== */
 
 :root {
+  color-scheme: dark;
+
   /* 主题色 */
   --primary-color: #00D4FF;
   --primary-light: #33DDFF;
@@ -33,6 +35,20 @@
   --bg-base: #0A0E14;
   --bg-light: #0D1117;
   --bg-white: #161B22;
+
+  /* 扩展主题变量 */
+  --tooltip-bg: rgba(13, 17, 23, 0.95);
+  --tooltip-border: #30363D;
+  --tooltip-text: #E6EDF3;
+  --chart-axis-color: #7D8590;
+  --chart-grid-color: #21262D;
+  --chart-label-color: #B0BAC5;
+  --chart-surface-color: #0D1117;
+  --code-bg: #0D1117;
+  --code-text: #D4D4D4;
+  --login-bg-gradient: linear-gradient(135deg, #0A0E14 0%, #0D1520 50%, #0A0E14 100%);
+  --login-card-bg: rgba(13, 17, 23, 0.8);
+  --login-card-border: rgba(0, 212, 255, 0.15);
   
   /* 阴影 */
   --shadow-base: 0 0 20px rgba(0, 212, 255, 0.08);
@@ -80,6 +96,64 @@
   --z-tooltip: 1070;
 }
 
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* 主题色 */
+  --primary-color: #0077FF;
+  --primary-light: #2990FF;
+  --primary-dark: #005DCC;
+
+  /* 功能色 */
+  --success-color: #00A76F;
+  --warning-color: #D97706;
+  --danger-color: #E11D48;
+  --info-color: #64748B;
+
+  /* 文字色 */
+  --text-primary: #0F172A;
+  --text-regular: #334155;
+  --text-secondary: #64748B;
+  --text-placeholder: #94A3B8;
+
+  /* 边框色 */
+  --border-base: #D7DEE7;
+  --border-light: #E7EDF3;
+  --border-lighter: #F1F5F9;
+
+  /* 背景色 */
+  --bg-base: #F4F7FB;
+  --bg-light: #FFFFFF;
+  --bg-white: #F8FBFF;
+
+  /* 扩展主题变量 */
+  --tooltip-bg: rgba(255, 255, 255, 0.96);
+  --tooltip-border: #D7DEE7;
+  --tooltip-text: #0F172A;
+  --chart-axis-color: #64748B;
+  --chart-grid-color: #E7EDF3;
+  --chart-label-color: #334155;
+  --chart-surface-color: #FFFFFF;
+  --code-bg: #F3F6FB;
+  --code-text: #0F172A;
+  --login-bg-gradient: linear-gradient(135deg, #EEF6FF 0%, #F8FBFF 50%, #EDF5FF 100%);
+  --login-card-bg: rgba(255, 255, 255, 0.86);
+  --login-card-border: rgba(0, 119, 255, 0.14);
+
+  /* 阴影 */
+  --shadow-base: 0 16px 32px rgba(15, 23, 42, 0.08);
+  --shadow-light: 0 8px 18px rgba(15, 23, 42, 0.06);
+  --shadow-dark: 0 20px 40px rgba(15, 23, 42, 0.12);
+
+  /* 发光效果 */
+  --glow-primary: 0 0 0 3px rgba(0, 119, 255, 0.12);
+  --glow-strong: 0 0 0 5px rgba(0, 119, 255, 0.14);
+
+  /* 渐变 */
+  --gradient-tech: linear-gradient(135deg, #0077FF, #00A8CC);
+  --gradient-tech-subtle: linear-gradient(135deg, rgba(0, 119, 255, 0.1), rgba(0, 168, 204, 0.05));
+}
+
 /* ==================== 响应式断点 ==================== */
 
 /* 
@@ -120,6 +194,7 @@ body {
   background-color: var(--bg-base);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--transition-base), color var(--transition-base);
 }
 
 /* ==================== 链接样式 ==================== */

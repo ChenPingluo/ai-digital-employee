@@ -66,6 +66,12 @@ const chartRef = ref(null)
  */
 let chartInstance = null
 
+function getCssVar(name) {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim()
+}
+
 // ==================== 计算属性 ====================
 
 /**
@@ -95,11 +101,21 @@ function initChart() {
  */
 function updateChart() {
   if (!chartInstance) return
+
+  const tooltipBg = getCssVar('--tooltip-bg')
+  const tooltipBorder = getCssVar('--tooltip-border')
+  const tooltipText = getCssVar('--tooltip-text')
+  const axisColor = getCssVar('--chart-axis-color')
+  const gridColor = getCssVar('--chart-grid-color')
+  const labelColor = getCssVar('--chart-label-color')
+  const surfaceColor = getCssVar('--chart-surface-color')
   
   // 提取数据
   const roomNames = props.data.map(item => item.room_name || '未命名')
   const reservationCounts = props.data.map(item => item.reservation_count || 0)
-  const totalHours = props.data.map(item => item.total_hours || 0)
+  const totalHours = props.data.map(
+    item => item.total_hours || item.total_duration_hours || 0
+  )
   
   // Echarts 配置项
   const option = {
@@ -109,14 +125,14 @@ function updateChart() {
       axisPointer: {
         type: 'cross',
         crossStyle: {
-          color: '#7D8590'
+          color: axisColor
         }
       },
-      backgroundColor: 'rgba(13, 17, 23, 0.95)',
-      borderColor: '#30363D',
+      backgroundColor: tooltipBg,
+      borderColor: tooltipBorder,
       borderWidth: 1,
       textStyle: {
-        color: '#E6EDF3'
+        color: tooltipText
       },
       formatter: function(params) {
         let result = `<strong>${params[0].axisValue}</strong><br/>`
@@ -137,7 +153,7 @@ function updateChart() {
       itemHeight: 10,
       textStyle: {
         fontSize: 12,
-        color: '#B0BAC5'
+        color: labelColor
       }
     },
     
@@ -158,14 +174,14 @@ function updateChart() {
         type: 'shadow'
       },
       axisLabel: {
-        color: '#7D8590',
+        color: axisColor,
         fontSize: 12,
         rotate: roomNames.length > 5 ? 30 : 0,
         interval: 0
       },
       axisLine: {
         lineStyle: {
-          color: '#30363D'
+          color: tooltipBorder
         }
       }
     },
@@ -180,17 +196,17 @@ function updateChart() {
         alignTicks: true,
         axisLabel: {
           formatter: '{value}',
-          color: '#7D8590'
+          color: axisColor
         },
         axisLine: {
           show: true,
           lineStyle: {
-            color: '#30363D'
+            color: tooltipBorder
           }
         },
         splitLine: {
           lineStyle: {
-            color: '#21262D',
+            color: gridColor,
             type: 'dashed'
           }
         }
@@ -203,12 +219,12 @@ function updateChart() {
         alignTicks: true,
         axisLabel: {
           formatter: '{value}h',
-          color: '#7D8590'
+          color: axisColor
         },
         axisLine: {
           show: true,
           lineStyle: {
-            color: '#30363D'
+            color: tooltipBorder
           }
         },
         splitLine: {
@@ -255,7 +271,7 @@ function updateChart() {
         itemStyle: {
           color: '#00FFA3',
           borderWidth: 2,
-          borderColor: '#0D1117'
+          borderColor: surfaceColor
         },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -280,6 +296,11 @@ function handleResize() {
   chartInstance?.resize()
 }
 
+function handleThemeChange() {
+  updateChart()
+  chartInstance?.resize()
+}
+
 // ==================== 生命周期 ====================
 
 onMounted(() => {
@@ -290,11 +311,13 @@ onMounted(() => {
   
   // 监听窗口大小变化
   window.addEventListener('resize', handleResize)
+  window.addEventListener('app-theme-change', handleThemeChange)
 })
 
 onUnmounted(() => {
   // 移除事件监听
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('app-theme-change', handleThemeChange)
   
   // 销毁图表实例
   chartInstance?.dispose()

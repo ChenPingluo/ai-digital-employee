@@ -22,12 +22,9 @@ from app.database import get_db
 from app.models import User
 from app.schemas.user import TokenData
 
-
-# ==================== 密码加密上下文 ====================
 # 使用 bcrypt 算法进行密码哈希，自动处理盐值
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# ==================== Bearer Token 认证方案 ====================
 # 用于从请求头中提取 Bearer Token
 security = HTTPBearer()
 
@@ -194,7 +191,7 @@ async def get_current_active_user(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """
-    获取当前活跃用户（确保用户已激活）
+    获取当前活跃用户
     
     Args:
         current_user: 当前认证的用户

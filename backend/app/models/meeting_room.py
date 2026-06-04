@@ -43,7 +43,6 @@ class MeetingRoom(Base):
     # 表名
     __tablename__ = "meeting_rooms"
     
-    # ==================== 主键字段 ====================
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
@@ -51,7 +50,6 @@ class MeetingRoom(Base):
         comment="会议室唯一标识符"
     )
     
-    # ==================== 基本信息字段 ====================
     # 会议室名称：唯一、非空
     name: Mapped[str] = mapped_column(
         String(100),
@@ -75,7 +73,6 @@ class MeetingRoom(Base):
         comment="会议室最大容纳人数"
     )
     
-    # ==================== 设备配置字段 ====================
     # 设备列表：使用 PostgreSQL 数组类型
     # 存储如：["投影仪", "白板", "视频会议设备"]
     equipment: Mapped[Optional[List[str]]] = mapped_column(
@@ -84,7 +81,6 @@ class MeetingRoom(Base):
         comment="会议室设备列表"
     )
     
-    # ==================== 状态字段 ====================
     # 可用状态：是否可预约
     is_available: Mapped[bool] = mapped_column(
         Boolean,
@@ -93,7 +89,6 @@ class MeetingRoom(Base):
         comment="会议室是否可预约"
     )
     
-    # ==================== 时间戳字段 ====================
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -107,7 +102,6 @@ class MeetingRoom(Base):
         comment="记录最后更新时间"
     )
     
-    # ==================== 关系定义 ====================
     # 与预约的一对多关系
     reservations: Mapped[List["Reservation"]] = relationship(
         "Reservation",

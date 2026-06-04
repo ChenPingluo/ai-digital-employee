@@ -6,7 +6,7 @@
 支持滑动窗口算法，适用于多进程部署场景。
 
 特性：
-- Redis 滑动窗口算法实现限流（支持分布式）
+- Redis 滑动窗口算法实现限流）
 - 单用户限流（默认10次/秒）和全局限流（默认500次/秒）
 - FastAPI 中间件和依赖注入两种使用方式
 - Redis 不可用时自动降级为内存限流
@@ -26,7 +26,6 @@ from redis.exceptions import RedisError
 from app.config import settings
 
 
-# ==================== 内存限流器（作为 Fallback）====================
 class MemoryRateLimiter:
     """
     内存限流器
@@ -140,8 +139,6 @@ class MemoryRateLimiter:
             else:
                 self.requests.clear()
 
-
-# ==================== Redis 限流器（分布式支持）====================
 class RedisRateLimiter:
     """
     Redis 限流器
@@ -214,7 +211,7 @@ class RedisRateLimiter:
         # 执行事务
         results = await pipe.execute()
         
-        # results[1] 是 ZCARD 的结果（移除过期记录后的数量）
+        # results[1] 是 ZCARD 的结果
         current_count = results[1]
         
         if current_count >= self.max_requests:
@@ -246,22 +243,20 @@ class RedisRateLimiter:
         count = await self.redis.zcard(key)
         return count or 0
 
-
-# ==================== 全局限流器实例 ====================
-# 内存限流器（作为 Redis 不可用时的 fallback）
+# 内存限流器
 # 默认配置：每分钟 100 次请求
 default_memory_limiter = MemoryRateLimiter(max_requests=100, window_seconds=60)
 
 # API 接口限流器：每分钟 60 次请求
 api_memory_limiter = MemoryRateLimiter(max_requests=60, window_seconds=60)
 
-# 认证接口限流器：每分钟 10 次请求（防止暴力破解）
+# 认证接口限流器：每分钟 10 次请求
 auth_memory_limiter = MemoryRateLimiter(max_requests=10, window_seconds=60)
 
-# AI 对话接口限流器：每分钟 20 次请求（控制 LLM 调用成本）
+# AI 对话接口限流器：每分钟 20 次请求
 chat_memory_limiter = MemoryRateLimiter(max_requests=20, window_seconds=60)
 
-# Redis 限流器实例（在应用启动时初始化）
+# Redis 限流器实例
 _redis_user_limiter: Optional[RedisRateLimiter] = None
 _redis_global_limiter: Optional[RedisRateLimiter] = None
 _redis_client: Optional[aioredis.Redis] = None
@@ -300,11 +295,11 @@ async def init_rate_limiters(redis_client: aioredis.Redis) -> bool:
             window_seconds=1
         )
         
-        print("✅ Redis 限流器初始化成功")
+        print("Redis 限流器初始化成功")
         return True
         
     except Exception as e:
-        print(f"⚠️ Redis 限流器初始化失败: {e}")
+        print(f"Redis 限流器初始化失败: {e}")
         return False
 
 
@@ -346,15 +341,13 @@ def get_client_ip(request: Request) -> str:
     
     return "unknown"
 
-
-# ==================== FastAPI 限流中间件 ====================
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """
     FastAPI 限流中间件
     
     在请求处理前进行限流检查，支持：
-    - 单用户限流（基于 IP）
-    - 全局限流（所有请求）
+    - 单用户限流
+    - 全局限流
     - Redis 不可用时自动降级到内存限流
     """
     
@@ -376,7 +369,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # 获取客户端 IP
         client_ip = get_client_ip(request)
         
-        # ===== 尝试使用 Redis 限流 =====
         if is_redis_limiter_available():
             try:
                 # 检查全局限流
@@ -400,9 +392,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 
             except RedisError as e:
                 # Redis 异常，降级到内存限流
-                print(f"⚠️ Redis 限流异常，降级到内存限流: {e}")
+                print(f"Redis 限流异常，降级到内存限流: {e}")
         
-        # ===== 降级：使用内存限流 =====
         allowed, remaining = default_memory_limiter.is_allowed(client_ip)
         
         if not allowed:
@@ -421,7 +412,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         
         Args:
             message: 错误消息
-            retry_after: 重试等待时间（秒）
+            retry_after: 重试等待时间
             
         Returns:
             Response: 429 响应对象
@@ -442,8 +433,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             }
         )
 
-
-# ==================== 依赖注入限流检查 ====================
 async def check_rate_limit(
     request: Request,
     limiter: MemoryRateLimiter = default_memory_limiter,
@@ -481,7 +470,7 @@ async def check_rate_limit(
             raise
         except RedisError as e:
             # Redis 异常，降级到内存限流
-            print(f"⚠️ Redis 限流检查异常，降级到内存限流: {e}")
+            print(f"Redis 限流检查异常，降级到内存限流: {e}")
     
     # 降级：使用内存限流
     allowed, remaining = limiter.is_allowed(client_ip)
@@ -555,7 +544,7 @@ def rate_limit(
                 except HTTPException:
                     raise
                 except RedisError as e:
-                    print(f"⚠️ Redis 限流装饰器异常，降级到内存限流: {e}")
+                    print(f"Redis 限流装饰器异常，降级到内存限流: {e}")
             
             # 降级：使用内存限流
             allowed, remaining = limiter.is_allowed(client_ip)
@@ -578,7 +567,6 @@ def rate_limit(
     return decorator
 
 
-# ==================== 导出兼容旧代码 ====================
 # 保持向后兼容，使用相同的名称
 default_limiter = default_memory_limiter
 api_limiter = api_memory_limiter

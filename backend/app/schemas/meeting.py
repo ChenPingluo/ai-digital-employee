@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Optional, List
 
 from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
+from app.datetime_utils import normalize_user_datetime
 
 
 class MeetingRoomResponse(BaseModel):
@@ -110,6 +111,12 @@ class ReservationCreate(BaseModel):
         description="会议结束时间",
         examples=["2024-12-30T11:00:00+08:00"]
     )
+
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def normalize_datetime_fields(cls, v: datetime) -> datetime:
+        """将无时区时间按北京时间解释后统一转换为 UTC。"""
+        return normalize_user_datetime(v)
     
     @model_validator(mode="after")
     def validate_time_range(self) -> "ReservationCreate":
@@ -129,7 +136,7 @@ class ReservationCreate(BaseModel):
         # 检查会议时长（例如：至少15分钟）
         if duration < 0.25:
             raise ValueError("会议时长不能少于15分钟")
-        
+
         return self
 
 

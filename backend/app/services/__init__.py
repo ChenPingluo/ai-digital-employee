@@ -9,6 +9,7 @@ from app.services import todo_service
 from app.services import meeting_service
 from app.services import weather_service
 from app.services import fastgpt_service
+from app.services import reminder_service
 from app.services.conversation_service import ConversationService
 
 __all__ = [
@@ -16,5 +17,6 @@ __all__ = [
     "meeting_service",
     "weather_service",
     "fastgpt_service",
+    "reminder_service",
     "ConversationService"
 ]
