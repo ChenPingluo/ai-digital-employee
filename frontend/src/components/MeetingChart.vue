@@ -35,7 +35,14 @@
  */
 
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import * as echarts from 'echarts'
+
+let echarts = null
+async function getECharts() {
+  if (!echarts) {
+    echarts = await import('echarts')
+  }
+  return echarts
+}
 
 // ==================== Props 定义 ====================
 
@@ -86,11 +93,14 @@ const hasData = computed(() => {
 /**
  * 初始化图表
  */
-function initChart() {
+async function initChart() {
   if (!chartRef.value) return
-  
+
+  // 动态加载 ECharts
+  const echartModule = await getECharts()
+
   // 创建 Echarts 实例
-  chartInstance = echarts.init(chartRef.value)
+  chartInstance = echartModule.init(chartRef.value)
   
   // 设置图表配置
   updateChart()

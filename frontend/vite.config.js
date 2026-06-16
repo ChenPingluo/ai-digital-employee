@@ -64,6 +64,16 @@ export default defineConfig({
         // 生产环境移除 debugger
         drop_debugger: true
       }
+    },
+    // 代码分割，将大型库拆分为独立 chunk
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'element-plus': ['element-plus', 'element-plus/dist/locale/zh-cn.mjs'],
+          'echarts': ['echarts'],
+          'vue-vendor': ['vue', 'vue-router', 'pinia', 'axios']
+        }
+      }
     }
   }
 })

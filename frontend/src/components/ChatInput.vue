@@ -56,6 +56,8 @@
 
 import { ref, computed, nextTick } from 'vue'
 import { Promotion } from '@element-plus/icons-vue'
+import { ElMessageBox } from 'element-plus'
+import { validateInput } from '@/utils/security'
 
 // ==================== Props 定义 ====================
 
@@ -115,6 +117,9 @@ const textareaRef = ref(null)
  */
 const inputValue = ref('')
 
+/** 防抖定时器 */
+let inputTimer = null
+
 // ==================== 计算属性 ====================
 
 /**
@@ -136,11 +141,17 @@ const canSend = computed(() => {
 function handleKeydown(event) {
   // 检测是否按下 Enter 键
   if (event.key === 'Enter') {
+    // Ctrl/Cmd+Enter 始终发送
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault()
+      handleSend()
+      return
+    }
     // 如果同时按下 Shift 键，允许换行
     if (event.shiftKey) {
       return // 默认行为：换行
     }
-    
+
     // 单独按 Enter，阻止默认换行并发送消息
     event.preventDefault()
     handleSend()
@@ -154,30 +165,59 @@ function handleKeydown(event) {
  * @param {Event} event - 输入事件
  */
 function handleInput(event) {
-  // 如果超过最大长度，截断
-  if (inputValue.value.length > props.maxLength) {
-    inputValue.value = inputValue.value.slice(0, props.maxLength)
+  // 防抖：延迟检查最大长度，避免高频截断
+  if (inputTimer) {
+    clearTimeout(inputTimer)
   }
+  inputTimer = setTimeout(() => {
+    if (inputValue.value.length > props.maxLength) {
+      inputValue.value = inputValue.value.slice(0, props.maxLength)
+    }
+    inputTimer = null
+  }, 300)
 }
 
 /**
  * 发送消息
  */
-function handleSend() {
+async function handleSend() {
   // 检查是否可以发送
   if (!canSend.value) {
     return
   }
-  
-  // 获取并清理输入内容
-  const content = inputValue.value.trim()
-  
+
+  // 获取原始输入
+  const rawContent = inputValue.value.trim()
+
+  // 安全验证
+  const { sanitized, isClean, matches } = validateInput(rawContent)
+
+  if (!isClean) {
+    // 弹窗警告敏感内容
+    const matchList = matches.map(m => `· ${m.label}：${m.text}`).join('<br/>')
+    try {
+      await ElMessageBox.confirm(
+        `<div>您的输入包含以下敏感内容：<br/><br/>${matchList}<br/><br/>是否仍要发送？</div>`,
+        '内容安全提醒',
+        {
+          confirmButtonText: '仍然发送',
+          cancelButtonText: '返回修改',
+          type: 'warning',
+          dangerouslyUseHTMLString: true
+        }
+      )
+    } catch {
+      // 用户取消，保留输入内容
+      return
+    }
+  }
+
   // 清空输入框
   inputValue.value = ''
-  
-  // 触发发送事件
-  emit('send', content)
-  
+
+  // 触发发送事件（使用清理后的内容）
+  emit('send', sanitized)
+
   // 重新聚焦到输入框
   nextTick(() => {
     textareaRef.value?.focus()
