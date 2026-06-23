@@ -1,6 +1,6 @@
 <!--
   聊天视图组件 ChatView.vue
-  
+
   AI 数字员工对话主界面，提供：
   - 左侧可折叠侧边栏（导航链接）
   - 消息列表展示与自动滚动
@@ -14,8 +14,8 @@
 <template>
   <div class="chat-view">
     <!-- 侧边栏 -->
-    <aside 
-      class="sidebar" 
+    <aside
+      class="sidebar"
       :class="{ 'sidebar-collapsed': isSidebarCollapsed }"
     >
       <!-- 侧边栏头部 -->
@@ -34,25 +34,34 @@
           @click="toggleSidebar"
         />
       </div>
-      
+
       <!-- 导航菜单 -->
       <nav class="sidebar-nav">
-        <router-link 
-          to="/" 
+        <router-link
+          to="/"
           class="nav-item"
           :class="{ active: $route.path === '/' }"
         >
           <el-icon :size="20"><ChatDotRound /></el-icon>
           <span v-show="!isSidebarCollapsed">对话</span>
         </router-link>
-        
-        <router-link 
-          to="/dashboard" 
+
+        <router-link
+          to="/dashboard"
           class="nav-item"
           :class="{ active: $route.path === '/dashboard' }"
         >
           <el-icon :size="20"><DataLine /></el-icon>
           <span v-show="!isSidebarCollapsed">数据看板</span>
+        </router-link>
+
+        <router-link
+          to="/memory"
+          class="nav-item"
+          :class="{ active: $route.path === '/memory' }"
+        >
+          <el-icon :size="20"><Coin /></el-icon>
+          <span v-show="!isSidebarCollapsed">记忆管理</span>
         </router-link>
       </nav>
 
@@ -98,7 +107,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 侧边栏底部 -->
       <div class="sidebar-footer">
         <!-- 用户信息 -->
@@ -124,7 +133,7 @@
             <span v-show="!isSidebarCollapsed">{{ isDarkTheme ? '浅色界面' : '深色界面' }}</span>
           </el-button>
         </div>
-        
+
         <!-- 退出按钮 -->
         <el-button
           class="logout-btn"
@@ -136,14 +145,14 @@
         </el-button>
       </div>
     </aside>
-    
+
     <!-- 移动端侧边栏遮罩 -->
-    <div 
+    <div
       v-if="isMobileMenuOpen"
       class="sidebar-overlay"
       @click="isMobileMenuOpen = false"
     ></div>
-    
+
     <!-- 主内容区 -->
     <main class="chat-main">
       <!-- 移动端头部 -->
@@ -156,7 +165,7 @@
         <h1>AI 数字员工</h1>
         <div style="width: 32px;"></div>
       </header>
-      
+
       <!-- 消息列表区域 -->
       <div class="message-area" ref="messageAreaRef">
         <!-- 空状态欢迎语 -->
@@ -168,12 +177,12 @@
           </div>
           <h2>欢迎使用 AI 数字员工系统</h2>
           <p class="welcome-desc">我是您的智能办公助手，可以帮助您：</p>
-          
+
           <!-- 功能介绍卡片 -->
           <div class="feature-cards">
-            <div 
-              class="feature-card" 
-              v-for="feature in features" 
+            <div
+              class="feature-card"
+              v-for="feature in features"
               :key="feature.title"
               @click="handleFeatureClick(feature.example)"
             >
@@ -186,13 +195,13 @@
               </div>
             </div>
           </div>
-          
+
           <!-- 快捷示例 -->
           <div class="quick-examples">
             <p>试试这些指令：</p>
             <div class="example-tags">
-              <el-tag 
-                v-for="example in quickExamples" 
+              <el-tag
+                v-for="example in quickExamples"
                 :key="example"
                 class="example-tag"
                 effect="plain"
@@ -203,7 +212,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- 消息列表 -->
         <div v-else class="message-list">
           <ChatMessage
@@ -211,7 +220,7 @@
             :key="msg.id"
             :message="msg"
           />
-          
+
           <!-- 思考中动画 -->
           <div v-if="isLoading && !hasStreamingMessage" class="thinking-indicator">
             <div class="thinking-avatar">
@@ -230,7 +239,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 输入区域 -->
       <div class="input-section">
         <ChatInput
@@ -247,7 +256,7 @@
 <script setup>
 /**
  * 聊天视图组件
- * 
+ *
  * AI 对话的主界面，核心功能组件
  */
 
@@ -258,6 +267,7 @@ import {
   Monitor,
   ChatDotRound,
   DataLine,
+  Coin,
   User,
   SwitchButton,
   Menu,
@@ -398,10 +408,10 @@ const toggleSidebar = () => {
  */
 const handleSendMessage = async (content) => {
   if (!content.trim()) return
-  
+
   // 使用流式接口发送消息
   await chatStore.sendMessageWithStream(content)
-  
+
   // 滚动到底部
   scrollToBottom()
 }
@@ -439,10 +449,10 @@ const handleLogout = async () => {
         type: 'warning'
       }
     )
-    
+
     // 清空聊天记录
     chatStore.clearMessages()
-    
+
     // 退出登录
     userStore.logout()
   } catch {
@@ -500,10 +510,10 @@ const formatRelativeTime = (timestamp) => {
 onMounted(() => {
   // 初始化用户信息
   userStore.initializeAuth()
-  
+
   // 加载会话列表
   chatStore.loadConversations()
-  
+
   // 聚焦到输入框
   nextTick(() => {
     chatInputRef.value?.focus()
@@ -1106,17 +1116,17 @@ watch(isMobileMenuOpen, (isOpen) => {
     height: 100vh;
     transition: left var(--transition-base);
   }
-  
+
   .sidebar-collapsed {
     width: 240px;
     left: -240px;
   }
-  
+
   /* 移动端菜单打开时 */
   .chat-view:has(.sidebar-overlay) .sidebar {
     left: 0;
   }
-  
+
   .sidebar-overlay {
     display: block;
     position: fixed;
@@ -1128,19 +1138,19 @@ watch(isMobileMenuOpen, (isOpen) => {
     z-index: 99;
     backdrop-filter: blur(4px);
   }
-  
+
   .mobile-header {
     display: flex;
   }
-  
+
   .message-area {
     padding: 16px;
   }
-  
+
   .input-section {
     padding: 12px 16px 16px;
   }
-  
+
   .feature-cards {
     grid-template-columns: 1fr;
   }
@@ -1148,11 +1158,11 @@ watch(isMobileMenuOpen, (isOpen) => {
   .footer-top {
     margin-bottom: 10px;
   }
-  
+
   .welcome-section {
     padding: 20px 0;
   }
-  
+
   .welcome-section h2 {
     font-size: 20px;
   }

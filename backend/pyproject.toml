@@ -1,0 +1,42 @@
+# ==================== AI 数字员工后端 - uv 项目配置 ====================
+#
+# 本地开发使用 uv 作为包管理器（Python 3.11，与 Docker 镜像一致）。
+#
+# 快速开始：
+#   cd backend
+#   uv sync            # 创建 .venv 并安装全部依赖（含 langchain 等本地包）
+#   uv run uvicorn main:app --reload --port 8000
+#
+# Docker 部署仍使用 requirements.txt + pip（Dockerfile 未改动，已验证可用）。
+# 如需同步依赖，请同时维护 requirements.txt。
+
+[project]
+name = "ai-digital-employee-backend"
+version = "1.0.0"
+description = "企业 AI 数字员工后端服务（FastAPI + LangChain）"
+requires-python = ">=3.11,<3.13"
+readme = "README.md"
+
+dependencies = [
+    "fastapi==0.104.1",
+    "uvicorn[standard]==0.24.0",
+    "sqlalchemy[asyncio]==2.0.23",
+    "asyncpg==0.29.0",
+    "pydantic==2.5.2",
+    "pydantic-settings==2.1.0",
+    "python-jose[cryptography]==3.3.0",
+    "passlib[bcrypt]==1.7.4",
+    "bcrypt==4.0.1",
+    "python-multipart==0.0.6",
+    "httpx==0.25.2",
+    "redis==5.0.1",
+    "langchain==0.1.0",
+    "langchain-openai==0.0.2",
+    "python-dotenv==1.0.0",
+    "alembic==1.13.0",
+    "email-validator==2.1.0",
+]
+
+[tool.uv]
+# 固定使用 Python 3.11（系统默认 3.14 与旧版 langchain 0.1.0 不兼容）
+# uv 会自动下载该版本到本地，无需手动安装。

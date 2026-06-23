@@ -1,6 +1,6 @@
 /**
  * Vue Router 路由配置
- * 
+ *
  * 定义应用的路由规则，包括：
  * - 聊天页面（首页）
  * - 仪表盘页面
@@ -18,6 +18,9 @@ const ChatView = () => import('@/views/ChatView.vue')
 
 // 仪表盘视图 - 数据概览和统计
 const DashboardView = () => import('@/views/DashboardView.vue')
+
+// 记忆管理视图 - 用户长期记忆
+const MemoryView = () => import('@/views/MemoryView.vue')
 
 // 登录视图 - 用户认证
 const LoginView = () => import('@/views/LoginView.vue')
@@ -45,6 +48,16 @@ const routes = [
     component: DashboardView,
     meta: {
       title: '工作台',
+      requiresAuth: true
+    }
+  },
+  {
+    // 记忆管理页面
+    path: '/memory',
+    name: 'Memory',
+    component: MemoryView,
+    meta: {
+      title: '记忆管理',
       requiresAuth: true
     }
   },
@@ -95,14 +108,14 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   // 设置页面标题
-  document.title = to.meta.title 
-    ? `${to.meta.title} - AI 数字员工系统` 
+  document.title = to.meta.title
+    ? `${to.meta.title} - AI 数字员工系统`
     : 'AI 数字员工系统'
-  
+
   // 从本地存储获取认证令牌
   const token = localStorage.getItem('access_token')
   const isAuthenticated = !!token
-  
+
   // 检查是否需要认证
   if (to.meta.requiresAuth && !isAuthenticated) {
     // 需要认证但未登录，重定向到登录页

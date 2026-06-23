@@ -1,6 +1,6 @@
 <!--
   仪表盘视图组件 DashboardView.vue
-  
+
   数据看板页面，展示：
   - 顶部统计卡片
   - 任务状态饼图
@@ -20,14 +20,20 @@
           </p>
         </div>
         <div class="header-right">
-          <el-button 
-            type="primary" 
+          <el-button
+            type="primary"
             :icon="ChatDotRound"
             @click="$router.push('/')"
           >
             AI 助手
           </el-button>
-          <el-button 
+          <el-button
+            :icon="Coin"
+            @click="$router.push('/memory')"
+          >
+            记忆管理
+          </el-button>
+          <el-button
             :icon="Refresh"
             :loading="isLoading"
             @click="refreshData"
@@ -43,7 +49,7 @@
         </div>
       </div>
     </header>
-    
+
     <!-- 主内容区 -->
     <main class="dashboard-main">
       <!-- 统计卡片区域 -->
@@ -69,7 +75,7 @@
             </el-tag>
           </div>
         </el-card>
-        
+
         <!-- 已完成卡片 -->
         <el-card class="stat-card" shadow="hover">
           <div class="stat-icon icon-completed">
@@ -85,7 +91,7 @@
             </el-tag>
           </div>
         </el-card>
-        
+
         <!-- 进行中卡片 -->
         <el-card class="stat-card" shadow="hover">
           <div class="stat-icon icon-progress">
@@ -101,7 +107,7 @@
             </el-tag>
           </div>
         </el-card>
-        
+
         <!-- 会议预约卡片 -->
         <el-card class="stat-card" shadow="hover">
           <div class="stat-icon icon-meeting">
@@ -118,7 +124,7 @@
           </div>
         </el-card>
       </div>
-      
+
       <!-- 图表区域 -->
       <div class="charts-section">
         <el-row :gutter="20">
@@ -128,7 +134,7 @@
               <TaskChart :data="todoStats" />
             </el-card>
           </el-col>
-          
+
           <!-- 会议室使用图表 -->
           <el-col :xs="24" :sm="24" :md="12" :lg="12">
             <el-card class="chart-card" shadow="hover">
@@ -137,7 +143,7 @@
           </el-col>
         </el-row>
       </div>
-      
+
       <!-- 详情区域 -->
       <div class="details-section">
         <el-row :gutter="20">
@@ -156,15 +162,15 @@
                   </el-button>
                 </div>
               </template>
-              
+
               <!-- 待办列表 -->
               <div class="todo-list">
-                <div 
-                  v-for="item in recentTodos" 
+                <div
+                  v-for="item in recentTodos"
                   :key="item.id"
                   class="todo-item"
                 >
-                  <el-tag 
+                  <el-tag
                     :type="getStatusType(item.status)"
                     size="small"
                     effect="plain"
@@ -173,9 +179,9 @@
                   </el-tag>
                   <span class="todo-title">{{ item.title }}</span>
                 </div>
-                
+
                 <!-- 空状态 -->
-                <el-empty 
+                <el-empty
                   v-if="recentTodos.length === 0"
                   description="暂无待办事项"
                   :image-size="80"
@@ -183,7 +189,7 @@
               </div>
             </el-card>
           </el-col>
-          
+
           <!-- 会议室列表 -->
           <el-col :xs="24" :sm="24" :md="12" :lg="12">
             <el-card class="detail-card" shadow="hover">
@@ -199,11 +205,11 @@
                   </el-button>
                 </div>
               </template>
-              
+
               <!-- 会议室列表 -->
               <div class="room-list">
-                <div 
-                  v-for="room in meetingStats" 
+                <div
+                  v-for="room in meetingStats"
                   :key="room.room_id"
                   class="room-item"
                 >
@@ -213,16 +219,16 @@
                       {{ room.reservation_count }} 次预约
                     </span>
                   </div>
-                  <el-progress 
-                    :percentage="Math.min(room.reservation_count * 10, 100)" 
+                  <el-progress
+                    :percentage="Math.min(room.reservation_count * 10, 100)"
                     :stroke-width="8"
                     :show-text="false"
                     :color="getProgressColor(room.reservation_count)"
                   />
                 </div>
-                
+
                 <!-- 空状态 -->
-                <el-empty 
+                <el-empty
                   v-if="meetingStats.length === 0"
                   description="暂无会议室数据"
                   :image-size="80"
@@ -291,7 +297,7 @@
 <script setup>
 /**
  * 仪表盘视图组件
- * 
+ *
  * 展示统计数据和图表
  */
 
@@ -306,7 +312,8 @@ import {
   Moon,
   Sunny,
   ArrowRight,
-  OfficeBuilding
+  OfficeBuilding,
+  Coin
 } from '@element-plus/icons-vue'
 
 // 导入组件
@@ -365,9 +372,9 @@ const completionRate = computed(() => {
  */
 const currentDateStr = computed(() => {
   const now = new Date()
-  const options = { 
-    year: 'numeric', 
-    month: 'long', 
+  const options = {
+    year: 'numeric',
+    month: 'long',
     day: 'numeric',
     weekday: 'long'
   }
@@ -959,34 +966,34 @@ watch(
   .dashboard-header {
     padding: 16px;
   }
-  
+
   .header-content {
     flex-direction: column;
     gap: 16px;
     align-items: flex-start;
   }
-  
+
   .header-right {
     width: 100%;
     justify-content: flex-end;
   }
-  
+
   .dashboard-main {
     padding: 16px;
   }
-  
+
   .stats-section {
     grid-template-columns: 1fr;
   }
-  
+
   .stat-card {
     padding: 16px;
   }
-  
+
   .chart-card {
     margin-bottom: 16px;
   }
-  
+
   .detail-card {
     margin-bottom: 16px;
   }

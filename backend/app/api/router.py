@@ -7,7 +7,7 @@ API 路由注册模块
 
 from fastapi import APIRouter
 
-from app.api.endpoints import auth, todos, meetings, chat, statistics, notifications
+from app.api.endpoints import auth, todos, meetings, chat, statistics, notifications, memory
 
 # 所有 API 路由统一使用 /api/v1 前缀
 api_router = APIRouter(prefix="/api/v1")
@@ -46,6 +46,12 @@ api_router.include_router(
 api_router.include_router(
     notifications.router,
     tags=["提醒推送"]
+)
+
+# ✚ 记忆管理接口
+api_router.include_router(
+    memory.router,
+    tags=["记忆管理"]
 )
 
 __all__ = ["api_router"]

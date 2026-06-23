@@ -10,6 +10,7 @@ from app.models.todo import Todo
 from app.models.meeting_room import MeetingRoom
 from app.models.reservation import Reservation
 from app.models.conversation import Conversation, ChatMessageRecord
+from app.models.user_memory import UserMemory  # ✚ 新增：导入记忆模型
 
 # 导出所有模型，便于统一导入
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     "MeetingRoom",
     "Reservation",
     "Conversation",
-    "ChatMessageRecord"
+    "ChatMessageRecord",
+    "UserMemory",  # ✚ 新增
 ]
