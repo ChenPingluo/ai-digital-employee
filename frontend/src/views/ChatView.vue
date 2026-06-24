@@ -156,7 +156,7 @@
     <!-- 主内容区 -->
     <main class="chat-main">
       <!-- 移动端头部 -->
-      <header class="mobile-header">
+      <header class="mobile-header safe-area-top">
         <el-button
           :icon="Menu"
           text
@@ -241,7 +241,7 @@
       </div>
 
       <!-- 输入区域 -->
-      <div class="input-section">
+      <div class="input-section safe-area-bottom">
         <ChatInput
           ref="chatInputRef"
           :disabled="isLoading"
@@ -287,6 +287,10 @@ import {
 import ChatMessage from '@/components/ChatMessage.vue'
 import ChatInput from '@/components/ChatInput.vue'
 
+// 导入 Composable
+import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import { useSwipe } from '@/composables/useSwipe'
+
 // 导入 Store
 import { useChatStore } from '@/stores/chat'
 import { useUserStore } from '@/stores/user'
@@ -320,6 +324,46 @@ const messageAreaRef = ref(null)
  * 输入框组件引用
  */
 const chatInputRef = ref(null)
+
+// ==================== 键盘快捷键 ====================
+
+// ==================== 滑动手势 ====================
+
+useSwipe(messageAreaRef, (direction) => {
+  if (window.innerWidth > 768) return
+  if (direction === 'right') {
+    isMobileMenuOpen.value = true
+  } else if (direction === 'left') {
+    isMobileMenuOpen.value = false
+  }
+})
+
+useKeyboardShortcuts([
+  {
+    key: 'n',
+    ctrl: true,
+    handler: () => chatStore.createNewConversation()
+  },
+  {
+    key: 'Escape',
+    handler: () => {
+      if (isMobileMenuOpen.value) {
+        isMobileMenuOpen.value = false
+      }
+    }
+  },
+  {
+    key: '/',
+    ctrl: true,
+    handler: () => chatInputRef.value?.focus(),
+    allowInInput: true
+  },
+  {
+    key: 'j',
+    ctrl: true,
+    handler: () => themeStore.toggleTheme()
+  }
+])
 
 // ==================== 计算属性 ====================
 
@@ -1165,6 +1209,12 @@ watch(isMobileMenuOpen, (isOpen) => {
 
   .welcome-section h2 {
     font-size: 20px;
+  }
+
+  /* 移动端增大触控目标 */
+  .conversation-item {
+    padding: 12px 10px;
+    min-height: 48px;
   }
 }
 

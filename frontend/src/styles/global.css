@@ -86,6 +86,12 @@
     'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
   
+  /* 安全区变量（iOS 刘海屏 + Home Indicator） */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+
   /* z-index 层级 */
   --z-dropdown: 1000;
   --z-sticky: 1020;
@@ -318,6 +324,14 @@ textarea:disabled {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* 安全区工具类 */
+.safe-area-top {
+  padding-top: calc(var(--spacing-md) + var(--safe-area-top));
+}
+.safe-area-bottom {
+  padding-bottom: calc(var(--spacing-md) + var(--safe-area-bottom));
 }
 
 /* 隐藏元素 */
